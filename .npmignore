@@ -1,0 +1,18 @@
+# Git
+.gitignore
+.git
+
+# Packages
+node_modules
+bun.lockb
+
+# Test
+tests
+bench
+
+# Development
+src
+examples
+tsconfig.json
+bench
+build.ts
