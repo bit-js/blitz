@@ -18,9 +18,14 @@ export interface Context {
  */
 export interface BuildContext {
     /**
-     * All store map
+     * Store keys
      */
-    readonly paramsMap: Record<string, any>;
+    readonly paramsKeys: string[];
+
+    /**
+     * Store values associated with keys
+     */
+    readonly paramsValues: string[];
 
     /**
      * Substring strategy micro-optimization

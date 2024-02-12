@@ -1,6 +1,6 @@
 import { Options } from '../types';
 import type { Tree } from '../tree';
-import type { MatchFunction } from '../types';
+import type { BuildContext, MatchFunction } from '../types';
 import compileNode from './node';
 import { ctxName, ctxPathEndName, ctxPathName } from './constants';
 import insertStore from './utils/insertStore';
@@ -14,22 +14,25 @@ export default function compile<T>(
     fallback?: T
 ): MatchFunction<T> {
     // Global context
-    const ctx = {
+    const ctx: BuildContext = {
         currentID: 0,
-        paramsMap: {},
+        paramsKeys: [],
+        paramsValues: [],
         substrStrategy: options.substr ?? 'substring',
     };
 
+    // Compile the root node
     const content = compileNode(
         tree.root, ctx,
         '0', false, false
     );
 
+    // Get fallback value for returning
     const fallbackResult = typeof fallback === 'undefined' ? 'null' : insertStore(ctx, fallback);
 
     // Build function with all registered dependencies
     return Function(
-        ...Object.keys(ctx.paramsMap),
+        ...ctx.paramsKeys,
         `return ${ctxName}=>{const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${content.join('')}return ${fallbackResult}}`
-    )(...Object.values(ctx.paramsMap));
+    )(...ctx.paramsValues);
 }
