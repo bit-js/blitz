@@ -1,15 +1,80 @@
-export interface ParamNode<T> {
-    paramName: string
-    store: T | null
-    inert: Node<T> | null
+export class ParamNode<T> {
+    paramName: string;
+    store: T | null;
+    inert: Node<T> | null;
+
+    constructor(name: string) {
+        this.paramName = name;
+    }
 }
 
-export interface Node<T> {
-    part: string
-    store: T | null
-    inert: Map<number, Node<T>> | null
-    params: ParamNode<T> | null
-    wildcardStore: T | null
+export class Node<T> {
+    part: string;
+    store: T | null = null;
+    inert: Map<number, Node<T>> | null = null;
+    params: ParamNode<T> | null = null;
+    wildcardStore: T | null = null;
+
+    /**
+     * Create a node
+     */
+    constructor(part: string) {
+        this.part = part;
+    }
+
+    /**
+     * Reset a node. Use this to move down a node then add children
+     */
+    reset(part: string): void {
+        this.part = part;
+
+        // Next step should be adding children
+        this.inert = this.store = this.params = this.wildcardStore = null;
+    }
+
+    /**
+     * Clone the current node with new part
+     */
+    clone(part: string) {
+        const node = new Node<T>(part);
+
+        node.store = this.store;
+        node.inert = this.inert;
+        node.params = this.params;
+        node.wildcardStore = this.wildcardStore;
+
+        return node;
+    }
+
+    /**
+     * Register a node as children
+     */
+    adopt(child: Node<T>): void {
+        if (this.inert === null) this.inert = new Map();
+
+        this.inert!.set(child.part.charCodeAt(0), child);
+    }
+
+    /**
+     * Set parametric node
+     */
+    param(paramName: string) {
+        if (!variableNameRegex.test(paramName))
+            throw new Error(`Parameter name ("${paramName}") must follow JavaScript variable name format`);
+        if (paramName === '$')
+            throw new Error(`Parameter name ("${paramName}") should not be "$" to avoid name collision with wildcard`);
+
+        if (this.params === null)
+            this.params = { paramName, store: null, inert: null };
+        else if (this.params.paramName !== paramName)
+            throw new Error(
+                `Cannot create route with parameter "${paramName}" \
+                because a route already exists with a different parameter name \
+                ("${this.params.paramName}") in the same location`
+            );
+
+        return this.params;
+    }
 }
 
 // Necessary regex
@@ -17,67 +82,8 @@ const variableNameRegex = /^[a-zA-Z_$][0-9a-zA-Z_$]*$/;
 const staticRegex = /:.+?(?=\/|$)/;
 const paramsRegex = /:.+?(?=\/|$)/g;
 
-/**
- * Reset a node. Use this to move down a node then add children
- */
-function assignNode(node: Node<any>, part: string): void {
-    node.part = part;
-    // Next step should be adding children
-    node.inert = new Map();
-    node.store = node.params = node.wildcardStore = null;
-};
-
-/**
- * Set a node as a child of the current node
- */
-function setChild(node: Node<any>, child: Node<any>): void {
-    node.inert!.set(child.part.charCodeAt(0), child);
-};
-
-/**
- * Create a parametric node and bind it to the current node
- */
-function initParamNode(node: Node<any>, paramName: string): ParamNode<any> {
-    if (!variableNameRegex.test(paramName))
-        throw new Error(`Parameter name ("${paramName}") must follow JavaScript variable name format`);
-    if (paramName === '$')
-        throw new Error(`Parameter name ("${paramName}") should not be "$" to avoid name collision with wildcard`);
-
-    if (node.params === null)
-        node.params = { paramName, store: null, inert: null };
-    else if (node.params.paramName !== paramName)
-        throw new Error(
-            `Cannot create route with parameter "${paramName}" \
-                because a route already exists with a different parameter name \
-                ("${node.params.paramName}") in the same location`
-        );
-
-    return node.params;
-};
-
-/**
- * Create a normal node
- */
-function createNode(part: string): Node<any> {
-    return {
-        part, store: null, inert: null,
-        params: null, wildcardStore: null
-    }
-}
-
-/**
- * Clone a node and only change the part
- */
-function cloneNode(node: Node<any>, part: string): Node<any> {
-    return {
-        part,
-        store: node.store, inert: node.inert,
-        params: node.params, wildcardStore: node.wildcardStore
-    }
-};
-
 export class Tree<T> {
-    root: Node<T> = createNode('/');
+    root: Node<T> = new Node('/');
 
     store(path: string, store: T): T {
         // Path should start with '/'
@@ -98,12 +104,12 @@ export class Tree<T> {
 
             if (i > 0) {
                 // Set param on the node
-                const params = initParamNode(node, paramParts[paramPartsIndex].slice(1));
+                const params = node.param(paramParts[paramPartsIndex].slice(1));
                 ++paramPartsIndex;
 
                 // Set inert
                 if (params.inert === null) {
-                    node = params.inert = createNode(part);
+                    node = params.inert = new Node(part);
                     continue;
                 }
 
@@ -113,11 +119,11 @@ export class Tree<T> {
             for (let j = 0; ;) {
                 if (j === part.length) {
                     if (j < node.part.length) {
-                        const oldNode = cloneNode(node, node.part.slice(j));
+                        const oldNode = node.clone(node.part.slice(j));
 
                         // Move the current node down
-                        assignNode(node, part);
-                        setChild(node, oldNode);
+                        node.reset(part);
+                        node.adopt(oldNode);
                     }
 
                     break;
@@ -135,7 +141,7 @@ export class Tree<T> {
                     }
 
                     // Create new node
-                    const childNode = createNode(part.slice(j));
+                    const childNode = new Node<T>(part.slice(j));
                     node.inert.set(part.charCodeAt(j), childNode);
                     node = childNode;
 
@@ -144,12 +150,12 @@ export class Tree<T> {
 
                 if (part[j] !== node.part[j]) {
                     // Split the node
-                    const newChild = createNode(part.slice(j));
-                    const oldNode = cloneNode(node, node.part.slice(j));
+                    const newChild = new Node<T>(part.slice(j));
+                    const oldNode = node.clone(node.part.slice(j));
 
-                    assignNode(node, node.part.slice(0, j));
-                    setChild(node, oldNode);
-                    setChild(node, newChild);
+                    node.reset(node.part.slice(0, j));
+                    node.adopt(oldNode);
+                    node.adopt(newChild);
 
                     node = newChild;
                     break;
@@ -161,7 +167,7 @@ export class Tree<T> {
 
         if (paramPartsIndex < paramParts.length) {
             // The final part is a parameter
-            const params = initParamNode(node, paramParts[paramPartsIndex].slice(1));
+            const params = node.param(paramParts[paramPartsIndex].slice(1));
 
             if (params.store === null) params.store = store;
             return params.store!;
