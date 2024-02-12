@@ -30,8 +30,10 @@ export default function compileNode(
         );
 
     // No condition check for root
-    if (isNotRoot)
-        builder.push(createTopLevelCheck(ctx, node, prevPathLen, pathLen), '{');
+    if (isNotRoot) {
+        builder.push(createTopLevelCheck(ctx, node, prevPathLen, pathLen));
+        builder.push('{');
+    }
 
     // Normal handler
     if (node.store !== null)

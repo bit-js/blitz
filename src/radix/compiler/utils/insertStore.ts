@@ -20,5 +20,6 @@ export default function insertStore(ctx: BuildContext, value: any): string {
     ++ctx.currentID;
 
     ctx.paramsMap[key] = value;
+
     return key;
 }

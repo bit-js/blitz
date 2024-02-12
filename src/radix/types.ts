@@ -41,9 +41,8 @@ export type SubstrStrategy = 'substring' | 'slice';
 /**
  * Router option
  */
-export interface Options<T> {
+export interface Options {
     substr?: SubstrStrategy;
-    fallback?: T | null;
 }
 
 /**

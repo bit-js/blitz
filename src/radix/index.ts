@@ -1,24 +1,33 @@
 import compile from './compiler';
 import { Tree } from './tree';
-import type { Context, Options, Route } from './types';
+import type { MatchFunction, Options, Route } from './types';
 
 export class Radix<T> {
     /**
-     * The DS
+     * The data structure to store parametric and wildcard routes
      */
     readonly tree: Tree<T> = new Tree();
 
     /**
+     * Store static routes
+     */
+    readonly map: Record<string, T> = {};
+
+    /**
+     * The fallback result
+     */
+    fallback?: T;
+
+    /**
      * Create a radix tree router
      */
-    constructor(public readonly options: Options<T> = {}) { }
+    constructor(public readonly options: Options = {}) { }
 
     /**
      * Register routes
      */
     routes(routes: Route<T>[]): this {
-        for (const route of routes)
-            this.tree.store(route[0], route[1]);
+        for (let i = 0, { length } = routes; i < length; ++i) this.put(routes[i]);
 
         return this;
     }
@@ -27,8 +36,13 @@ export class Radix<T> {
      * Register a route
      */
     put(route: Route<T>): this {
-        this.tree.store(route[0], route[1]);
+        const path = route[0];
 
+        // If path includes parameters or wildcard
+        if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
+            this.tree.store(route[0], route[1]);
+        else
+            this.map[path] = route[1];
         return this;
     }
 
@@ -43,12 +57,18 @@ export class Radix<T> {
      * Build a find function
      */
     build(): this {
-        this.find = compile(this.tree, this.options);
+        const searchTree = compile(
+            this.tree, this.options,
+            this.fallback
+        );
+        const { map } = this;
+
+        this.find = c => map[c.path] ?? searchTree(c);
         return this;
     }
 }
 
 export interface Radix<T> {
-    find(c: Context): T | null;
+    find: MatchFunction<T>;
 };
 

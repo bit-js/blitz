@@ -10,7 +10,8 @@ import insertStore from './utils/insertStore';
  */
 export default function compile<T>(
     tree: Tree<T>,
-    options: Options<T>,
+    options: Options,
+    fallback?: T
 ): MatchFunction<T> {
     // Global context
     const ctx = {
@@ -24,12 +25,11 @@ export default function compile<T>(
         '0', false, false
     );
 
-    // Fallback handling
-    const fallbackCall = typeof options.fallback === 'undefined' ? 'null' : insertStore(ctx, options.fallback);
+    const fallbackResult = typeof fallback === 'undefined' ? 'null' : insertStore(ctx, fallback);
 
     // Build function with all registered dependencies
     return Function(
         ...Object.keys(ctx.paramsMap),
-        `return ${ctxName}=>{const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${content.join('')}return ${fallbackCall}}`
+        `return ${ctxName}=>{const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${content.join('')}return ${fallbackResult}}`
     )(...Object.values(ctx.paramsMap));
 }
