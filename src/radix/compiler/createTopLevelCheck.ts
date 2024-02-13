@@ -11,6 +11,7 @@ export default (
     if (node.part.length < 15) {
         const result: string[] = [];
 
+        // Chain char code checks
         for (let i = 1, { length } = node.part; i < length; ++i) {
             result.push(`if(${ctxPathName}.charCodeAt(${prevPathLen})===${node.part.charCodeAt(i)})`);
             prevPathLen = plus(prevPathLen, 1);
