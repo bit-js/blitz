@@ -1,4 +1,4 @@
-import { BuildContext } from '../../types';
+import type { BuildContext } from '../tree';
 import insertStore from './insertStore';
 
 export default (

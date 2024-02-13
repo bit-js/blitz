@@ -1,12 +1,9 @@
-import { splitPath, type PathParts } from '@internal/tree/splitPath';
+import splitPath, { type PathParts } from '@internal/tree/splitPath';
 
 import { test, expect } from 'bun:test';
 import { run, bench, group } from 'mitata';
 
 import paths from 'paths';
-
-// Avoid JIT bias
-for (let i = 0; i < 30; ++i) bench('', () => { });
 
 // Regex version of split path (Slow but correct)
 const staticRegex = /:.+?(?=\/|$)/;
@@ -20,13 +17,17 @@ function splitPathRegex(path: string): PathParts {
     return [inertParts, paramParts];
 }
 
-// Tests and benchmark
+// Validate results of split path
 test('Compare paths', () => {
     for (let path of paths) {
         if (path.endsWith('*')) path = path.slice(0, -1);
         expect(splitPath(path)).toEqual(splitPathRegex(path));
     }
 });
+
+
+// Benchmark
+for (let i = 0; i < 30; ++i) bench('', () => { });
 
 group('Split path', () => {
     bench('Regex', () => paths.map(splitPathRegex));

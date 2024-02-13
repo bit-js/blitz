@@ -15,9 +15,6 @@
         "declaration": true,
         "emitDeclarationOnly": true,
         "paths": {
-            "@router": [
-                ".."
-            ],
             "@internal/*": [
                 "../src/radix/*"
             ],

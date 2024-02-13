@@ -1,6 +1,5 @@
-import compile from './compiler';
 import { Tree } from './tree';
-import type { MatchFunction, Options, Route } from './types';
+import type { MatchFunction, Options, Route } from './tree/types';
 
 export class Radix<T> {
     /**
@@ -58,10 +57,7 @@ export class Radix<T> {
      * Build a find function
      */
     build(): this {
-        const searchTree = compile(
-            this.tree, this.options,
-            this.fallback
-        );
+        const searchTree = this.tree.compile(this.options, this.fallback);
         const { map } = this;
 
         this.find = c => map[c.path] ?? searchTree(c);
@@ -73,6 +69,4 @@ export interface Radix<T> {
     find: MatchFunction<T>;
 };
 
-export * from './tree';
-export * from './types';
-export { default as compile } from './compiler';
+export * as tree from './tree';

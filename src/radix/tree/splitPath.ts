@@ -4,7 +4,7 @@ export type PathParts = [
 ];
 
 // Split inert and param parts
-export function splitPath(path: string): PathParts {
+export default function splitPath(path: string): PathParts {
     const inertParts: string[] = [];
     const paramParts: string[] = [];
 

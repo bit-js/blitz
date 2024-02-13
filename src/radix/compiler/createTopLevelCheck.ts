@@ -1,6 +1,5 @@
-import { Node } from '../../tree/nodes';
-import { BuildContext, } from '../../types';
-import { ctxPathName } from '../constants';
+import type { Node, BuildContext } from '../tree';
+import { ctxPathName } from './constants';
 import plus from './plus';
 
 export default (

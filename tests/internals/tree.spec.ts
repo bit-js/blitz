@@ -1,7 +1,7 @@
-import { internal } from '@router';
+import { Tree } from '@internal/tree';
 import paths from 'paths';
 
-const tree = new internal.Tree<number>();
+const tree = new Tree<number>();
 const pathsCount = paths.length;
 
 for (let i = 0; i < pathsCount; ++i)
@@ -11,4 +11,4 @@ for (let i = 0; i < pathsCount; ++i)
 console.log(tree.debug(2));
 
 // Print the compiled tree code
-console.log(internal.compile(tree, { substr: 'slice' }, pathsCount).toString());
+console.log(tree.compile({ substr: 'slice' }, pathsCount).toString());

@@ -1,5 +1,9 @@
-import { splitPath } from './splitPath';
+import splitPath from './splitPath';
 import { Node } from './nodes';
+import type { BuildContext, MatchFunction, Options } from './types';
+
+import insertStore from '../compiler/insertStore';
+import { ctxName, ctxPathEndName, ctxPathName } from '../compiler/constants';
 
 export class Tree<T> {
     /**
@@ -111,6 +115,34 @@ export class Tree<T> {
     }
 
     /**
+     * Build a function
+     */
+    compile(
+        options: Options,
+        fallback?: T
+    ): MatchFunction<T> {
+        // Global context
+        const ctx: BuildContext = {
+            currentID: 0,
+            paramsKeys: [],
+            paramsValues: [],
+            substrStrategy: options.substr ?? 'substring',
+        };
+
+        // Compile the root node
+        const content = this.root.compile(ctx, '0', false, false);
+
+        // Get fallback value for returning
+        const fallbackResult = typeof fallback === 'undefined' ? 'null' : insertStore(ctx, fallback);
+
+        // Build function with all registered dependencies
+        return Function(
+            ...ctx.paramsKeys,
+            `return ${ctxName}=>{const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${content.join('')}return ${fallbackResult}}`
+        )(...ctx.paramsValues);
+    }
+
+    /**
      * Return the tree in string
      */
     debug(space?: number | string): string {
@@ -139,3 +171,9 @@ function replaceValue(_: string, value: any) {
 
     return value;
 }
+
+// Export all from submodules
+export * from './nodes';
+export * from './types';
+export { default as checkParam } from './checkParam';
+export { default as splitPath } from './splitPath';

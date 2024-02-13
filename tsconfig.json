@@ -13,7 +13,8 @@
         "strictNullChecks": true,
         "moduleResolution": "bundler",
         "declaration": true,
-        "emitDeclarationOnly": true
+        "emitDeclarationOnly": true,
+        "verbatimModuleSyntax": true
     },
     "include": [
         "src"
