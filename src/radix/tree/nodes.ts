@@ -9,6 +9,7 @@ import plus from '../compiler/plus';
 import storeCheck from '../compiler/storeCheck';
 
 import checkParam from './checkParam';
+import slicePath from '../compiler/slicePath';
 
 /**
  * A parametric node
@@ -187,7 +188,7 @@ export class Node<T> {
 
             // Check slash index and get the parameter value if store is found
             if (hasStore) {
-                const value = `${ctxPathName}.${ctx.substrStrategy}(${prevIndex})`;
+                const value = slicePath(prevIndex, ctx);
 
                 builder.push(storeCheck(
                     `${hasInert ? currentParamIndexName : nextSlashIndex}===-1`,
@@ -227,7 +228,7 @@ export class Node<T> {
         }
 
         if (this.wildcardStore !== null) {
-            const value = `${ctxPathName}.${ctx.substrStrategy}(${pathLen})`;
+            const value = slicePath(pathLen, ctx);
 
             // Assign wildcard parameter
             builder.push(ctxParamsName);
