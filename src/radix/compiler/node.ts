@@ -1,4 +1,4 @@
-import type { Node } from '../tree';
+import type { Node } from '../tree/nodes';
 import type { BuildContext } from '../types';
 
 import plus from './utils/plus';
@@ -29,7 +29,7 @@ export default function compileNode(
             node.part.length - 1
         );
 
-    // No condition check for root
+    // No condition check for root (no scope should be created)
     if (isNotRoot) {
         builder.push(createTopLevelCheck(ctx, node, prevPathLen, pathLen));
         builder.push('{');
@@ -43,17 +43,17 @@ export default function compileNode(
         ));
 
     if (node.inert !== null) {
-        const keys = node.inert.keys(), newPathLen = plus(pathLen, 1);
-        let it = keys.next();
+        const pairs = node.inert.entries(), nextPathLen = plus(pathLen, 1);
+        let currentPair = pairs.next();
 
         // Create an if statement for only one item
         if (node.inert.size === 1) {
-            builder.push(`if(${ctxPathName}.charCodeAt(${pathLen})===${it.value})`);
-
+            builder.push(`if(${ctxPathName}.charCodeAt(${pathLen})===${currentPair.value[0]}){`);
             builder.push(...compileNode(
-                node.inert.get(it.value)!, ctx,
-                newPathLen, isChildParam, isNestedChildParam
+                currentPair.value[1], ctx,
+                nextPathLen, isChildParam, isNestedChildParam
             ));
+            builder.push('}');
         }
 
         // Create a switch for multiple items
@@ -62,15 +62,15 @@ export default function compileNode(
 
             do {
                 // Create a case statement for each char code
-                builder.push(`case ${it.value}:`);
+                builder.push(`case ${currentPair.value[0]}:`);
                 builder.push(...compileNode(
-                    node.inert.get(it.value)!, ctx,
-                    newPathLen, isChildParam, isNestedChildParam
+                    currentPair.value[1], ctx,
+                    nextPathLen, isChildParam, isNestedChildParam
                 ));
                 builder.push('break;');
 
-                it = keys.next();
-            } while (!it.done);
+                currentPair = pairs.next();
+            } while (!currentPair.done);
 
             builder.push('}');
         }

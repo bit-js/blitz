@@ -1,5 +1,5 @@
 {
-  "name": "blitz",
+  "name": "blitz-router",
   "main": "lib/index.js",
   "version": "1.0.0",
   "type": "module",
@@ -8,10 +8,11 @@
     "mitata": "^0.1.6",
     "typescript": "^5.0.0"
   },
-  "description": "A collection of minimal, insanely fast routers for all runtimes",
+  "description": "An insanely fast router for all runtimes",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "build-test": "bun build.ts && bun test",
+    "jit-test": "BUN_JSC_jitPolicyScale=0.0 BUN_JSC_thresholdForOptimizeSoon=0.0 BUN_JSC_thresholdForJITSoon=0.0 bun test",
+    "jitless-test": "BUN_JSC_UseJit=0 bun test",
     "jit": "BUN_JSC_jitPolicyScale=0.0 BUN_JSC_thresholdForOptimizeSoon=0.0 bun run",
     "jitless": "BUN_JSC_UseJit=0 bun run"
   },

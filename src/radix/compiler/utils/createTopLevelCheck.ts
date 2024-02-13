@@ -1,4 +1,4 @@
-import { Node } from '../../tree';
+import { Node } from '../../tree/nodes';
 import { BuildContext, } from '../../types';
 import { ctxPathName } from '../constants';
 import plus from './plus';

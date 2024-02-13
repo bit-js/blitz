@@ -38,9 +38,10 @@ export class Radix<T> {
     put(route: Route<T>): this {
         const path = route[0];
 
-        // If path includes parameters or wildcard
+        // If path includes parameters or wildcard add to the tree
         if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
             this.tree.store(route[0], route[1]);
+        // Static path matches faster with a map
         else
             this.map[path] = route[1];
         return this;
@@ -72,3 +73,6 @@ export interface Radix<T> {
     find: MatchFunction<T>;
 };
 
+export * from './tree';
+export * from './types';
+export { default as compile } from './compiler';
