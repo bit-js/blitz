@@ -7,10 +7,6 @@ export class Radix<T> {
      */
     readonly tree: Tree<T> = new Tree();
 
-    /**
-     * Store static routes
-     */
-    readonly map: Record<string, T> = {};
 
     /**
      * The fallback result
@@ -35,14 +31,7 @@ export class Radix<T> {
      * Register a route
      */
     put(route: Route<T>): this {
-        const path = route[0];
-
-        // If path includes parameters or wildcard add to the tree
-        if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
-            this.tree.store(route[0], route[1]);
-        // Static path matches faster with a map
-        else
-            this.map[path] = route[1];
+        this.tree.store(route[0], route[1]);
         return this;
     }
 
@@ -57,10 +46,8 @@ export class Radix<T> {
      * Build a find function
      */
     build(): this {
-        const searchTree = this.tree.compile(this.options, this.fallback);
-        const { map } = this;
-
-        this.find = c => map[c.path] ?? searchTree(c);
+        this.tree.fallback = this.fallback;
+        this.find = this.tree.compile(this.options);
         return this;
     }
 }

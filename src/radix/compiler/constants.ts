@@ -1,8 +1,10 @@
 export const storePrefix = 'f',
-    prevParamIndexName = 'p',
-    currentParamIndexName = 'i',
+    prevParamIdx = 'p',
+    currentParamIdx = 'i',
     // Context-related locals
     ctxName = 'c',
     ctxPathName = 'path', // const {path} = c
     ctxPathEndName = 'length', // const {length} = path
-    ctxParamsName = `${ctxName}.params`;
+    ctxParamsName = `${ctxName}.params`,
+    // Static match result
+    staticMatch = 'm';

@@ -2,8 +2,8 @@ import splitPath from './splitPath';
 import { Node } from './nodes';
 import type { BuildContext, MatchFunction, Options } from './types';
 
-import insertStore from '../compiler/insertStore';
-import { ctxName, ctxPathEndName, ctxPathName } from '../compiler/constants';
+import store from '../compiler/store';
+import { ctxName, ctxPathEndName, ctxPathName, staticMatch } from '../compiler/constants';
 
 export class Tree<T> {
     /**
@@ -12,9 +12,42 @@ export class Tree<T> {
     root: Node<T> = new Node('/');
 
     /**
+     * The fallback result
+     */
+    fallback?: T;
+
+    /**
+     * Built-in static matching
+     */
+    staticMap: Record<string, T> | null = null;
+
+    store(path: string, store: T): T {
+        // If path includes parameters or wildcard add to the tree
+        if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
+            this.storeDynamic(path, store);
+        // Static path matches faster with a map
+        else
+            this.storeStatic(path, store);
+
+        return store;
+    }
+
+    /**
+     * Store static path
+     */
+    storeStatic(path: string, store: T): void {
+        // Path should not start with '/'
+        if (path.charCodeAt(0) === 47) path = path.slice(1);
+        if (path.charCodeAt(path.length - 1) === 47) path = path.slice(0, -1);
+
+        if (this.staticMap === null) this.staticMap = {};
+        this.staticMap[path] = store;
+    }
+
+    /**
      * Register a path
      */
-    store(path: string, store: T): T {
+    storeDynamic(path: string, store: T): void {
         // Path should start with '/'
         if (path.charCodeAt(0) !== 47) path = '/' + path;
 
@@ -100,46 +133,64 @@ export class Tree<T> {
             const params = node.param(paramParts[paramPartsIndex].slice(1));
 
             if (params.store === null) params.store = store;
-            return params.store!;
         }
 
-        if (isWildcard) {
-            // The final part is a wildcard
-            if (node.wildcardStore === null) node.wildcardStore = store;
-            return node.wildcardStore!;
-        }
+        // The final part is a wildcard
+        if (isWildcard && node.wildcardStore === null) node.wildcardStore = store;
 
         // The final part is static
         if (node.store === null) node.store = store;
-        return node.store;
+    }
+
+    /**
+     * Create static map check
+     */
+    createStaticCheck(ctx: BuildContext) {
+        return this.staticMap === null
+            ? ''
+            : `const ${staticMatch}=${store(ctx, this.staticMap)}[${ctxName}.${ctxPathName}];if(typeof ${staticMatch}!=='undefined')return ${staticMatch};`;
+    }
+
+    /**
+     * Create dynamic path check
+     */
+    createDynamicCheck(ctx: BuildContext) {
+        return `const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${this.root.compile(ctx, '0', false, false).join('')}`;
+    }
+
+    /**
+     * Create fallback call
+     */
+    createFallbackCall(ctx: BuildContext) {
+        return this.root.wildcardStore === null
+            ? typeof this.fallback === 'undefined'
+                ? ';return null'
+                : `;return ${store(ctx, this.fallback)}`
+            : '';
+
     }
 
     /**
      * Build a function
      */
     compile(
-        options: Options,
-        fallback?: T
+        options: Options
     ): MatchFunction<T> {
         // Global context
         const ctx: BuildContext = {
             currentID: 0,
+
             paramsKeys: [],
             paramsValues: [],
+
             substrStrategy: options.substr ?? 'substring',
         };
 
-        // Compile the root node
-        const content = this.root.compile(ctx, '0', false, false);
-
-        // Get fallback value for returning
-        const fallbackResult = typeof fallback === 'undefined' ? 'null' : insertStore(ctx, fallback);
+        // Static map check
+        const body = `return ${ctxName}=>{${this.createStaticCheck(ctx)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx)}}`;
 
         // Build function with all registered dependencies
-        return Function(
-            ...ctx.paramsKeys,
-            `return ${ctxName}=>{const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${content.join('')}return ${fallbackResult}}`
-        )(...ctx.paramsValues);
+        return Function(...ctx.paramsKeys, body)(...ctx.paramsValues);
     }
 
     /**

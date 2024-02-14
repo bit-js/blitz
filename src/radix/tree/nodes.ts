@@ -2,14 +2,14 @@ import type { BuildContext } from './types';
 
 import {
     ctxParamsName, ctxPathEndName, ctxPathName,
-    currentParamIndexName, prevParamIndexName
+    currentParamIdx, prevParamIdx
 } from '../compiler/constants';
 import createTopLevelCheck from '../compiler/createTopLevelCheck';
 import plus from '../compiler/plus';
-import storeCheck from '../compiler/storeCheck';
 
 import checkParam from './checkParam';
 import slicePath from '../compiler/slicePath';
+import store from '../compiler/store';
 
 /**
  * A parametric node
@@ -120,10 +120,7 @@ export class Node<T> {
 
         // Normal handler
         if (this.store !== null)
-            builder.push(storeCheck(
-                `${ctxPathEndName}===${pathLen}`,
-                this.store, ctx, null
-            ));
+            builder.push(`if(${ctxPathEndName}===${pathLen})return ${store(ctx, this.store)};`);
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
@@ -161,7 +158,7 @@ export class Node<T> {
             const { params } = this;
 
             // Reuse the variable if declared before
-            const prevIndex = isChildParam ? prevParamIndexName : pathLen;
+            const prevIndex = isChildParam ? prevParamIdx : pathLen;
 
             // Declare a variable to save previous param index 
             // if current parameter is the second one
@@ -170,7 +167,7 @@ export class Node<T> {
                 if (!isNestedChildParam)
                     builder.push('let ');
 
-                builder.push(`${prevParamIndexName}=${pathLen};`);
+                builder.push(`${prevParamIdx}=${pathLen};`);
             }
 
             const nextSlashIndex = `${ctxPathName}.indexOf('/'${prevIndex === '0' ? '' : ',' + prevIndex})`,
@@ -183,30 +180,31 @@ export class Node<T> {
                 if (!isChildParam)
                     builder.push('let ');
 
-                builder.push(`${currentParamIndexName}=${nextSlashIndex};`);
+                builder.push(`${currentParamIdx}=${nextSlashIndex};`);
             }
 
             // Check slash index and get the parameter value if store is found
             if (hasStore) {
+                builder.push(`if(${hasInert ? currentParamIdx : nextSlashIndex}===-1){`);
+
+                // Set param
                 const value = slicePath(prevIndex, ctx);
 
-                builder.push(storeCheck(
-                    `${hasInert ? currentParamIndexName : nextSlashIndex}===-1`,
-                    this.params.store!, ctx,
-                    // Set params before return
-                    `${ctxParamsName}${isChildParam
-                        ? `.${key}=${value}`
-                        : `={${key}:${value}}`
-                    };`
-                ));
+                builder.push(ctxParamsName);
+                builder.push(isChildParam
+                    ? `.${key}=${value};`
+                    : `={${key}:${value}};`);
+
+                // Return store
+                builder.push(`return ${store(ctx, this.params.store)}}`);
             }
 
             if (hasInert) {
-                const value = `${ctxPathName}.${ctx.substrStrategy}(${prevIndex},${currentParamIndexName})`;
+                const value = `${ctxPathName}.${ctx.substrStrategy}(${prevIndex},${currentParamIdx})`;
 
                 // Additional check if no store is provided (if store exists the previous part should match the path first)
                 if (!hasStore)
-                    builder.push(`if(${currentParamIndexName}!==-1){`);
+                    builder.push(`if(${currentParamIdx}!==-1){`);
 
                 // Assign param
                 builder.push(ctxParamsName);
@@ -217,7 +215,7 @@ export class Node<T> {
 
                 // Handle inert
                 builder.push(...params.inert!.compile(
-                    ctx, plus(currentParamIndexName, 1), true,
+                    ctx, plus(currentParamIdx, 1), true,
                     // If this is the first parameter inert this will be false
                     isChildParam
                 ));
@@ -233,7 +231,7 @@ export class Node<T> {
             // Assign wildcard parameter
             builder.push(ctxParamsName);
             builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
-            builder.push(storeCheck(null, this.wildcardStore, ctx, null));
+            builder.push(`return ${store(ctx, this.wildcardStore)}`);
         }
 
         // Root does not include a check

@@ -7,8 +7,10 @@ const pathsCount = paths.length;
 for (let i = 0; i < pathsCount; ++i)
     tree.store(paths[i], i);
 
+tree.fallback = pathsCount;
+
 // Pretty print tree
 console.log(tree.debug(2));
 
 // Print the compiled tree code
-console.log(tree.compile({ substr: 'slice' }, pathsCount).toString());
+console.log(tree.compile({ substr: 'slice' }).toString());
