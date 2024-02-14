@@ -19,7 +19,7 @@ export type Params<Path extends string> = Path extends `${infer Part}/${infer Re
 /**
  * Request context
  */
-export class Context<Params, State> implements BaseContext {
+export class Context<Params = undefined, State = undefined> implements BaseContext {
     /**
      * Parsed pathname
      */

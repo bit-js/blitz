@@ -21,7 +21,7 @@ export class Radix<T> {
      * Register routes
      */
     routes(routes: Route<T>[]): this {
-        for (let i = 0, { length } = routes; i < length; ++i) this.put(routes[i]);
+        for (let i = 0, { length } = routes; i < length; ++i) this.put(...routes[i]);
 
         return this;
     }
@@ -29,8 +29,8 @@ export class Radix<T> {
     /**
      * Register a route
      */
-    put(route: Route<T>): this {
-        this.tree.store(route[0], route[1]);
+    put(path: Route<T>[0], handler: Route<T>[1]): this {
+        this.tree.store(path, handler);
         return this;
     }
 
@@ -49,11 +49,9 @@ export class Radix<T> {
         this.find = this.tree.compile(this.options);
         return this;
     }
-}
 
-export interface Radix<T> {
     find: MatchFunction<T>;
-};
+}
 
 export * as tree from './tree';
 export * as compiler from './compiler';
