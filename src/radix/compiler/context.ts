@@ -89,4 +89,11 @@ export default class BuildContext {
 
         return `if(${ctxPathName}.${this.substrStrategy}(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
     }
+
+    /**
+     * Build a function from a function body and inject stored parameters
+     */
+    build(body: string) {
+        return Function(...this.paramsKeys, body)(...this.paramsValues);
+    }
 }

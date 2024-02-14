@@ -181,8 +181,7 @@ export class Tree<T> {
         const ctx: BuildContext = new BuildContext(options);
         const body = `return ${ctxName}=>{${this.createStaticCheck(ctx)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx)}}`;
 
-        // Build function with all registered dependencies
-        return Function(...ctx.paramsKeys, body)(...ctx.paramsValues);
+        return ctx.build(body);
     }
 
     /**
