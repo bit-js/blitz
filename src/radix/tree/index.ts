@@ -1,8 +1,8 @@
 import splitPath from './splitPath';
 import { Node } from './nodes';
-import type { BuildContext, MatchFunction, Options } from './types';
+import type { MatchFunction, Options } from './types';
 
-import store from '../compiler/store';
+import BuildContext from '../compiler/context';
 import { ctxName, ctxPathEndName, ctxPathName, staticMatch } from '../compiler/constants';
 
 export class Tree<T> {
@@ -146,15 +146,18 @@ export class Tree<T> {
      * Create static map check
      */
     createStaticCheck(ctx: BuildContext) {
+        // Only need static check if static map exists
         return this.staticMap === null
             ? ''
-            : `const ${staticMatch}=${store(ctx, this.staticMap)}[${ctxName}.${ctxPathName}];if(typeof ${staticMatch}!=='undefined')return ${staticMatch};`;
+            : `const ${staticMatch}=${ctx.put(this.staticMap)}[${ctxName}.${ctxPathName}];if(typeof ${staticMatch}!=='undefined')return ${staticMatch};`;
     }
 
     /**
      * Create dynamic path check
      */
     createDynamicCheck(ctx: BuildContext) {
+        // Declare all necessary variables and compile the root node
+        // Dynamic check should end with ';' or a close bracket
         return `const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${this.root.compile(ctx, '0', false, false).join('')}`;
     }
 
@@ -162,12 +165,12 @@ export class Tree<T> {
      * Create fallback call
      */
     createFallbackCall(ctx: BuildContext) {
+        // Only need the fallback if root wildcard does not exist
         return this.root.wildcardStore === null
             ? typeof this.fallback === 'undefined'
-                ? ';return null'
-                : `;return ${store(ctx, this.fallback)}`
+                ? 'return null'
+                : `return ${ctx.put(this.fallback)}`
             : '';
-
     }
 
     /**
@@ -177,16 +180,7 @@ export class Tree<T> {
         options: Options
     ): MatchFunction<T> {
         // Global context
-        const ctx: BuildContext = {
-            currentID: 0,
-
-            paramsKeys: [],
-            paramsValues: [],
-
-            substrStrategy: options.substr ?? 'substring',
-        };
-
-        // Static map check
+        const ctx: BuildContext = new BuildContext(options);
         const body = `return ${ctxName}=>{${this.createStaticCheck(ctx)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx)}}`;
 
         // Build function with all registered dependencies

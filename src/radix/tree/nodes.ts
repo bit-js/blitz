@@ -1,15 +1,12 @@
-import type { BuildContext } from './types';
+import type BuildContext from '../compiler/context';
 
 import {
     ctxParamsName, ctxPathEndName, ctxPathName,
     currentParamIdx, prevParamIdx
 } from '../compiler/constants';
-import createTopLevelCheck from '../compiler/createTopLevelCheck';
 import plus from '../compiler/plus';
 
 import checkParam from './checkParam';
-import slicePath from '../compiler/slicePath';
-import store from '../compiler/store';
 
 /**
  * A parametric node
@@ -114,13 +111,13 @@ export class Node<T> {
 
         // No condition check for root (no scope should be created)
         if (isNotRoot) {
-            builder.push(createTopLevelCheck(ctx, this, prevPathLen, pathLen));
+            builder.push(ctx.createTopLevelCheck(this.part, prevPathLen, pathLen));
             builder.push('{');
         }
 
         // Normal handler
         if (this.store !== null)
-            builder.push(`if(${ctxPathEndName}===${pathLen})return ${store(ctx, this.store)};`);
+            builder.push(`if(${ctxPathEndName}===${pathLen})return ${ctx.put(this.store)};`);
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
@@ -170,7 +167,7 @@ export class Node<T> {
                 builder.push(`${prevParamIdx}=${pathLen};`);
             }
 
-            const nextSlashIndex = `${ctxPathName}.indexOf('/'${prevIndex === '0' ? '' : ',' + prevIndex})`,
+            const nextSlashIndex = ctx.searchPath('/', prevIndex),
                 hasInert = params.inert !== null,
                 hasStore = params.store !== null,
                 key = params.paramName;
@@ -188,7 +185,7 @@ export class Node<T> {
                 builder.push(`if(${hasInert ? currentParamIdx : nextSlashIndex}===-1){`);
 
                 // Set param
-                const value = slicePath(prevIndex, ctx);
+                const value = ctx.slicePath(prevIndex);
 
                 builder.push(ctxParamsName);
                 builder.push(isChildParam
@@ -196,13 +193,13 @@ export class Node<T> {
                     : `={${key}:${value}};`);
 
                 // Return store
-                builder.push(`return ${store(ctx, this.params.store)}}`);
+                builder.push(`return ${ctx.put(this.params.store)}}`);
             }
 
             if (hasInert) {
-                const value = `${ctxPathName}.${ctx.substrStrategy}(${prevIndex},${currentParamIdx})`;
+                const value = ctx.substringPath(prevIndex, currentParamIdx);
 
-                // Additional check if no store is provided (if store exists the previous part should match the path first)
+                // Additional check if no store is provided (if store exists the previous part should match and return the store)
                 if (!hasStore)
                     builder.push(`if(${currentParamIdx}!==-1){`);
 
@@ -226,12 +223,12 @@ export class Node<T> {
         }
 
         if (this.wildcardStore !== null) {
-            const value = slicePath(pathLen, ctx);
+            const value = ctx.slicePath(pathLen);
 
             // Assign wildcard parameter
             builder.push(ctxParamsName);
             builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
-            builder.push(`return ${store(ctx, this.wildcardStore)}`);
+            builder.push(`return ${ctx.put(this.wildcardStore)};`);
         }
 
         // Root does not include a check

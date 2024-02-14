@@ -14,31 +14,6 @@ export interface Context {
 }
 
 /**
- * The object for passing between recursive calls
- */
-export interface BuildContext {
-    /**
-     * Store keys
-     */
-    readonly paramsKeys: string[];
-
-    /**
-     * Store values associated with keys
-     */
-    readonly paramsValues: string[];
-
-    /**
-     * Substring strategy micro-optimization
-     */
-    readonly substrStrategy: SubstrStrategy;
-
-    /**
-     * The current ID of the store
-     */
-    currentID: number;
-}
-
-/**
  * String substr strategy
  */
 export type SubstrStrategy = 'substring' | 'slice';
