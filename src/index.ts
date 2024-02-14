@@ -73,21 +73,20 @@ export class Blitz {
                 if (typeof matcher === 'undefined') return null;
 
                 const ctx = new Context(req);
-
-                // Skip null check here 
                 return matcher(ctx)!(ctx);
             };
 
+        // Handle with fallback matcher
         const fallbackMatcher = fallbackRouter.build().find;
         return (req: Request) => {
-            const ctx = new Context(req), matcher = methodMatcher[req.method];
+            const ctx = new Context(req);
 
+            const matcher = methodMatcher[req.method];
             if (typeof matcher !== 'undefined') {
                 const handler = matcher(ctx);
                 if (handler !== null) return handler(ctx);
             }
 
-            // Skip null check here
             return fallbackMatcher(ctx)!(ctx);
         }
     }
