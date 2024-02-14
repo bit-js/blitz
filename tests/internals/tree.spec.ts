@@ -1,5 +1,5 @@
 import { Tree } from '@internal/tree';
-import paths from 'paths';
+import paths from './paths';
 
 const tree = new Tree<number>();
 const pathsCount = paths.length;

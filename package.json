@@ -1,10 +1,10 @@
 {
-  "name": "blitz-router",
+  "name": "@bitjs/blitz",
   "main": "lib/index.js",
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {
-    "bun-types": "latest",
+    "@types/bun": "latest",
     "mitata": "^0.1.6",
     "typescript": "^5.0.0"
   },

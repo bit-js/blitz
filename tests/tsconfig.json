@@ -4,9 +4,6 @@
         "lib": [
             "ESNext"
         ],
-        "types": [
-            "bun-types"
-        ],
         "esModuleInterop": true,
         "target": "ESNext",
         "skipDefaultLibCheck": true,
@@ -17,9 +14,6 @@
         "paths": {
             "@internal/*": [
                 "../src/radix/*"
-            ],
-            "paths": [
-                "./paths.ts"
             ]
         }
     },

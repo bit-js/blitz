@@ -7,7 +7,7 @@ export * as internal from './radix';
 type RadixRouter = Radix<Handler>;
 type Matcher = tree.MatchFunction<Handler>;
 
-export class Blitz {
+export default class Blitz {
     /**
      * Methods that should be supported
      */
@@ -93,3 +93,5 @@ export class Blitz {
 }
 
 const noop = () => null;
+
+export * from './types';

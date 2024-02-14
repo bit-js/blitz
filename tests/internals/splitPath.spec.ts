@@ -3,7 +3,7 @@ import splitPath, { type PathParts } from '@internal/tree/splitPath';
 import { test, expect } from 'bun:test';
 import { run, bench, group } from 'mitata';
 
-import paths from 'paths';
+import paths from './paths';
 
 // Regex version of split path (Slow but correct)
 const staticRegex = /:.+?(?=\/|$)/;

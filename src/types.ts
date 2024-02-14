@@ -1,4 +1,4 @@
-import type { Context as BaseContext } from './radix/tree';
+import type { tree } from './radix';
 
 /**
  * Infer an URL segment parameter
@@ -19,7 +19,7 @@ export type Params<Path extends string> = Path extends `${infer Part}/${infer Re
 /**
  * Request context
  */
-export class Context<Params = undefined, State = undefined> implements BaseContext {
+export class Context<Params = undefined, State = undefined> implements tree.Context {
     /**
      * Parsed pathname
      */
