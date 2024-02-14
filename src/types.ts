@@ -43,7 +43,7 @@ export class Context<Params = undefined, State = undefined> implements tree.Cont
     /**
      * Parsed state
      */
-    readonly state: State;
+    state: State;
 
     /**
      * Parse the request

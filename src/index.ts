@@ -52,32 +52,30 @@ export default class Blitz {
      * Return the request handler
      */
     get fetch() {
-        const { methodRouter, fallbackRouter, fallback } = this, noFallbackRoute = fallbackRouter === null;
-
-        // Skip null check at the end because fallback default is set to noop
-        if (noFallbackRoute)
-            for (const method in methodRouter)
-                methodRouter[method].fallback = fallback;
-        else
-            this.fallbackRouter!.fallback = fallback;
+        const { methodRouter, fallbackRouter, fallback } = this;
 
         // Compile method matchers
         const methodMatcher: Record<string, Matcher> = {};
+
+        if (fallbackRouter === null) {
+            // Register fallback
+            for (const method in methodRouter)
+                methodMatcher[method] = methodRouter[method].build(fallback).find;
+
+            return (req: Request) => {
+                const ctx = new Context(req);
+
+                const matcher = methodMatcher[req.method];
+                return typeof matcher === 'undefined' ? fallback(ctx) : matcher(ctx)!(ctx);
+            };
+        }
+
+        // Ignore fallback of matchers
         for (const method in methodRouter)
             methodMatcher[method] = methodRouter[method].build().find;
 
-        // Very simple handling if fallback router does not exists
-        if (noFallbackRoute)
-            return (req: Request) => {
-                const matcher = methodMatcher[req.method];
-                if (typeof matcher === 'undefined') return null;
-
-                const ctx = new Context(req);
-                return matcher(ctx)!(ctx);
-            };
-
         // Handle with fallback matcher
-        const fallbackMatcher = fallbackRouter.build().find;
+        const fallbackMatcher = fallbackRouter.build(fallback).find;
         return (req: Request) => {
             const ctx = new Context(req);
 

@@ -8,11 +8,6 @@ export class Radix<T> {
     readonly tree: Tree<T> = new Tree();
 
     /**
-     * The fallback result
-     */
-    fallback?: T;
-
-    /**
      * Create a radix tree router
      */
     constructor(public readonly options: Options = {}) { }
@@ -44,8 +39,8 @@ export class Radix<T> {
     /**
      * Build a find function
      */
-    build(): this {
-        this.tree.fallback = this.fallback;
+    build(fallback?: T): this {
+        this.tree.fallback = fallback;
         this.find = this.tree.compile(this.options);
         return this;
     }
