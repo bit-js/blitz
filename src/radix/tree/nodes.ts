@@ -1,8 +1,7 @@
 import type BuildContext from '../compiler/context';
 
 import {
-    ctxParamsName, ctxPathEndName, ctxPathName,
-    currentParamIdx, prevParamIdx
+    ctxParamsName, currentParamIdx, prevParamIdx
 } from '../compiler/constants';
 import plus from '../compiler/plus';
 
@@ -93,17 +92,17 @@ export class Node<T> {
      */
     compile(
         ctx: BuildContext,
-        // Track previous path (can be static or a variable name)
+        // Track previous path length (can be static or a variable name)
         prevPathLen: string,
         // Whether parameters exist
         isChildParam: boolean,
         // Whether the index tracker for parameters exists (not creating many variables)
         isNestedChildParam: boolean
     ): string[] {
-        // Get current pathname
         const
             builder: string[] = [],
             isNotRoot = this.part.length !== 1,
+            // Get current path length from root node to this node
             pathLen = plus(
                 prevPathLen,
                 this.part.length - 1
@@ -115,9 +114,9 @@ export class Node<T> {
             builder.push('{');
         }
 
-        // Normal handler
         if (this.store !== null)
-            builder.push(`if(${ctxPathEndName}===${pathLen})return ${ctx.put(this.store)};`);
+            // Check whether the current length is equal to current path length
+            builder.push(`if(length===${pathLen})return ${ctx.put(this.store)};`);
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
@@ -125,7 +124,7 @@ export class Node<T> {
 
             // Create an if statement for only one item
             if (this.inert.size === 1) {
-                builder.push(`if(${ctxPathName}.charCodeAt(${pathLen})===${currentPair.value[0]}){`);
+                builder.push(`if(path.charCodeAt(${pathLen})===${currentPair.value[0]}){`);
                 builder.push(...currentPair.value[1].compile(
                     ctx, nextPathLen, isChildParam, isNestedChildParam
                 ));
@@ -134,7 +133,7 @@ export class Node<T> {
 
             // Create a switch for multiple items
             else {
-                builder.push(`switch(${ctxPathName}.charCodeAt(${pathLen})){`);
+                builder.push(`switch(path.charCodeAt(${pathLen})){`);
 
                 do {
                     // Create a case statement for each char code

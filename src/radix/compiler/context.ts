@@ -1,5 +1,5 @@
 import type { Options, SubstrStrategy } from '../tree';
-import { ctxPathName, storePrefix } from './constants';
+import { storePrefix } from './constants';
 import plus from './plus';
 
 /**
@@ -53,21 +53,21 @@ export default class BuildContext {
      * Get the string statement after sliced from idx
      */
     slicePath(idx: string) {
-        return idx === '0' ? ctxPathName : `${ctxPathName}.${this.substrStrategy}(${idx})`;
+        return idx === '0' ? 'path' : `path.${this.substrStrategy}(${idx})`;
     }
 
     /**
      * Get the substring statement after sliced from start to end
      */
     substringPath(start: string, end: string) {
-        return `${ctxPathName}.${this.substrStrategy}(${start},${end})`;
+        return `path.${this.substrStrategy}(${start},${end})`;
     }
 
     /**
      * Get the index of a token in the path string
      */
     searchPath(token: string, startIdx: string) {
-        return `${ctxPathName}.indexOf('${token}'${startIdx === '0' ? '' : ',' + startIdx})`;
+        return `path.indexOf('${token}'${startIdx === '0' ? '' : ',' + startIdx})`;
     }
 
     /**
@@ -80,14 +80,14 @@ export default class BuildContext {
 
             // Chain char code checks
             for (let i = 1, { length } = part; i < length; ++i) {
-                result.push(`if(${ctxPathName}.charCodeAt(${prevPathLen})===${part.charCodeAt(i)})`);
+                result.push(`if(path.charCodeAt(${prevPathLen})===${part.charCodeAt(i)})`);
                 prevPathLen = plus(prevPathLen, 1);
             }
 
             return result.join('');
         }
 
-        return `if(${ctxPathName}.${this.substrStrategy}(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
+        return `if(path.${this.substrStrategy}(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
     }
 
     /**

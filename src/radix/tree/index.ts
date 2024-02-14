@@ -3,7 +3,7 @@ import { Node } from './nodes';
 import type { MatchFunction, Options } from './types';
 
 import BuildContext from '../compiler/context';
-import { ctxName, ctxPathEndName, ctxPathName, staticMatch } from '../compiler/constants';
+import { ctxName, staticMatch } from '../compiler/constants';
 
 export class Tree<T> {
     /**
@@ -149,7 +149,7 @@ export class Tree<T> {
         // Only need static check if static map exists
         return this.staticMap === null
             ? ''
-            : `const ${staticMatch}=${ctx.put(this.staticMap)}[${ctxName}.${ctxPathName}];if(typeof ${staticMatch}!=='undefined')return ${staticMatch};`;
+            : `const ${staticMatch}=${ctx.put(this.staticMap)}[${ctxName}.path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch};`;
     }
 
     /**
@@ -158,7 +158,7 @@ export class Tree<T> {
     createDynamicCheck(ctx: BuildContext) {
         // Declare all necessary variables and compile the root node
         // Dynamic check should end with ';' or a close bracket
-        return `const{${ctxPathName}}=${ctxName},{${ctxPathEndName}}=${ctxPathName};${this.root.compile(ctx, '0', false, false).join('')}`;
+        return `const{path}=${ctxName},{length}=path;${this.root.compile(ctx, '0', false, false).join('')}`;
     }
 
     /**
