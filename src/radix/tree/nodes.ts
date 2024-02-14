@@ -16,6 +16,7 @@ export class ParamNode<T> {
     inert: Node<T> | null = null;
 
     constructor(name: string) {
+        checkParam(name);
         this.paramName = name;
     }
 }
@@ -73,8 +74,6 @@ export class Node<T> {
      * Set parametric node
      */
     param(paramName: string): ParamNode<T> {
-        checkParam(paramName);
-
         if (this.params === null)
             this.params = new ParamNode<T>(paramName);
         else if (this.params.paramName !== paramName)

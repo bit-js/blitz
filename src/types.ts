@@ -19,7 +19,7 @@ export type Params<Path extends string> = Path extends `${infer Part}/${infer Re
 /**
  * Request context
  */
-export class Context<Params> implements BaseContext {
+export class Context<Params, State> implements BaseContext {
     /**
      * Parsed pathname
      */
@@ -41,11 +41,16 @@ export class Context<Params> implements BaseContext {
     readonly params: Params;
 
     /**
+     * Parsed state
+     */
+    readonly state: State;
+
+    /**
      * Parse the request
      */
     constructor(readonly req: Request) {
-        const start = req.url.indexOf('/', 12) + 1;
-        const end = req.url.indexOf('?', start);
+        const start = req.url.indexOf('/', 12) + 1,
+            end = req.url.indexOf('?', start);
 
         this.pathStart = start;
 
@@ -62,6 +67,6 @@ export class Context<Params> implements BaseContext {
 /**
  * A request handler
  */
-export interface Handler<Params> {
-    (c: Context<Params>): any;
+export interface Handler<Params = undefined, State = undefined> {
+    (c: Context<Params, State>): any;
 }
