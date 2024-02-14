@@ -3,7 +3,7 @@
  */
 export interface Context {
     /**
-     * Parsed pathname 
+     * Parsed pathname (Should not start with '/') 
      */
     path: string;
 

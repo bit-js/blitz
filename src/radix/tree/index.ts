@@ -176,9 +176,7 @@ export class Tree<T> {
     /**
      * Build a function
      */
-    compile(
-        options: Options
-    ): MatchFunction<T> {
+    compile(options: Options): MatchFunction<T> {
         // Global context
         const ctx: BuildContext = new BuildContext(options);
         const body = `return ${ctxName}=>{${this.createStaticCheck(ctx)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx)}}`;

@@ -7,7 +7,6 @@ export class Radix<T> {
      */
     readonly tree: Tree<T> = new Tree();
 
-
     /**
      * The fallback result
      */
@@ -57,3 +56,4 @@ export interface Radix<T> {
 };
 
 export * as tree from './tree';
+export * as compiler from './compiler';

@@ -1,7 +1,9 @@
+import type { Context as BaseContext } from './radix/tree';
+
 /**
  * Infer an URL segment parameter
  */
-export type Segment<T extends string> =
+type Segment<T extends string> =
     T extends `:${infer Param}`
     ? { [K in Param]: string }
     : T extends '*'
@@ -17,16 +19,49 @@ export type Params<Path extends string> = Path extends `${infer Part}/${infer Re
 /**
  * Request context
  */
-export interface Context<Params = any> {
-    path: string;
-    startPath: number;
-    endPath: number;
-    params: Params;
+export class Context<Params> implements BaseContext {
+    /**
+     * Parsed pathname
+     */
+    readonly path: string;
+
+    /**
+     * Start path index
+     */
+    readonly pathStart: number;
+
+    /**
+     * End path index
+     */
+    readonly pathEnd: number;
+
+    /**
+     * Request params
+     */
+    readonly params: Params;
+
+    /**
+     * Parse the request
+     */
+    constructor(readonly req: Request) {
+        const start = req.url.indexOf('/', 12) + 1;
+        const end = req.url.indexOf('?', start);
+
+        this.pathStart = start;
+
+        if (end === -1) {
+            this.path = req.url.substring(start);
+            this.pathEnd = req.url.length;
+        } else {
+            this.path = req.url.substring(start, end);
+            this.pathEnd = end;
+        }
+    }
 }
 
 /**
  * A request handler
  */
-export interface Handler {
-    (c: Context): any;
+export interface Handler<Params> {
+    (c: Context<Params>): any;
 }
