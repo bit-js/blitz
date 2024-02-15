@@ -4,17 +4,13 @@ import type { MatchFunction, Options } from './types';
 
 import BuildContext from '../compiler/context';
 import { ctxName, staticMatch } from '../compiler/constants';
+import { defaultArgs } from '../compiler/getArgs';
 
 export class Tree<T> {
     /**
      * The root node of the tree
      */
     root: Node<T> = new Node('/');
-
-    /**
-     * The fallback result
-     */
-    fallback?: T;
 
     /**
      * Built-in static matching
@@ -40,8 +36,8 @@ export class Tree<T> {
         if (path.charCodeAt(0) === 47) path = path.slice(1);
         if (path.charCodeAt(path.length - 1) === 47) path = path.slice(0, -1);
 
-        if (this.staticMap === null) this.staticMap = {};
-        this.staticMap[path] = store;
+        this.staticMap ??= {};
+        this.staticMap[path] ??= store;
     }
 
     /**
@@ -128,28 +124,23 @@ export class Tree<T> {
             }
         }
 
-        if (paramPartsIndex < paramParts.length) {
+        if (paramPartsIndex < paramParts.length)
             // The final part is a parameter
-            const params = node.param(paramParts[paramPartsIndex].slice(1));
-
-            if (params.store === null) params.store = store;
-        }
+            node.param(paramParts[paramPartsIndex].slice(1)).store ??= store;
 
         // The final part is a wildcard
-        if (isWildcard && node.wildcardStore === null) node.wildcardStore = store;
+        if (isWildcard) node.wildcardStore ??= store;
 
         // The final part is static
-        if (node.store === null) node.store = store;
+        else node.store ??= store;
     }
 
     /**
      * Create static map check
      */
-    createStaticCheck(ctx: BuildContext) {
+    createStaticCheck(ctx: BuildContext, options: Options) {
         // Only need static check if static map exists
-        return this.staticMap === null
-            ? ''
-            : `const ${staticMatch}=${ctx.put(this.staticMap)}[${ctxName}.path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch};`;
+        return this.staticMap === null ? '' : `const ${staticMatch}=${ctx.insert(this.staticMap)}[${ctxName}.path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${options.invokeResultFunction ? defaultArgs : ''};`;
     }
 
     /**
@@ -164,22 +155,18 @@ export class Tree<T> {
     /**
      * Create fallback call
      */
-    createFallbackCall(ctx: BuildContext) {
+    createFallbackCall(ctx: BuildContext, fallback: T | null) {
         // Only need the fallback if root wildcard does not exist
-        return this.root.wildcardStore === null
-            ? typeof this.fallback === 'undefined'
-                ? 'return null'
-                : `return ${ctx.put(this.fallback)}`
-            : '';
+        return this.root.wildcardStore === null ? ctx.yield(fallback) : '';
     }
 
     /**
      * Build a function
      */
-    compile(options: Options): MatchFunction<T> {
+    compile(options: Options, fallback: T | null): MatchFunction<T> {
         // Global context
         const ctx: BuildContext = new BuildContext(options);
-        const body = `return ${ctxName}=>{${this.createStaticCheck(ctx)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx)}}`;
+        const body = `return ${ctxName}=>{${this.createStaticCheck(ctx, options)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx, fallback)}}`;
 
         return ctx.build(body);
     }

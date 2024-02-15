@@ -115,7 +115,7 @@ export class Node<T> {
 
         if (this.store !== null)
             // Check whether the current length is equal to current path length
-            builder.push(`if(length===${pathLen})return ${ctx.put(this.store)};`);
+            builder.push(`if(length===${pathLen})${ctx.yield(this.store)};`);
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
@@ -191,7 +191,7 @@ export class Node<T> {
                     : `={${key}:${value}};`);
 
                 // Return store
-                builder.push(`return ${ctx.put(this.params.store)}}`);
+                builder.push(`${ctx.yield(this.params.store)}}`);
             }
 
             if (hasInert) {
@@ -226,7 +226,7 @@ export class Node<T> {
             // Assign wildcard parameter
             builder.push(ctxParamsName);
             builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
-            builder.push(`return ${ctx.put(this.wildcardStore)};`);
+            builder.push(`${ctx.yield(this.wildcardStore)};`);
         }
 
         // Root does not include a check

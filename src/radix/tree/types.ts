@@ -14,15 +14,11 @@ export interface Context {
 }
 
 /**
- * String substr strategy
- */
-export type SubstrStrategy = 'substring' | 'slice';
-
-/**
  * Router option
  */
 export interface Options {
-    substr?: SubstrStrategy;
+    substrStrategy?: 'substring' | 'slice';
+    invokeResultFunction?: boolean;
 }
 
 /**

@@ -39,9 +39,8 @@ export class Radix<T> {
     /**
      * Build a find function
      */
-    build(fallback?: T): this {
-        this.tree.fallback = fallback;
-        this.find = this.tree.compile(this.options);
+    build(fallback: T | null): this {
+        this.find = this.tree.compile(this.options, fallback);
         return this;
     }
 

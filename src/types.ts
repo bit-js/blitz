@@ -19,7 +19,7 @@ export type Params<Path extends string> = Path extends `${infer Part}/${infer Re
 /**
  * Request context
  */
-export class Context<Params = undefined, State = undefined> implements tree.Context {
+export class Context<Params, State> implements tree.Context, ResponseInit {
     /**
      * Parsed pathname
      */
@@ -62,11 +62,26 @@ export class Context<Params = undefined, State = undefined> implements tree.Cont
             this.pathEnd = end;
         }
     }
+
+    /**
+     * Headers
+     */
+    readonly headers: Record<string, string> = {};
+
+    /**
+     * Status code
+     */
+    status: number;
+
+    /**
+     * Status text
+     */
+    statusText: string;
 }
 
 /**
  * A request handler
  */
-export interface Handler<Params = undefined, State = undefined> {
+export interface Handler<Params = unknown, State = unknown> {
     (c: Context<Params, State>): any;
 }

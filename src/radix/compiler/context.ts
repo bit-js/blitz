@@ -1,5 +1,6 @@
-import type { Options, SubstrStrategy } from '../tree';
+import type { Options } from '../tree';
 import { storePrefix } from './constants';
+import getArgs from './getArgs';
 import plus from './plus';
 
 /**
@@ -17,9 +18,9 @@ export default class BuildContext {
     readonly paramsValues: string[] = [];
 
     /**
-     * Substring strategy micro-optimization
+     * Micro-optimizations that compiler should do
      */
-    readonly substrStrategy: SubstrStrategy;
+    readonly options: Required<Options>;
 
     /**
      * The current ID of the store
@@ -30,16 +31,16 @@ export default class BuildContext {
      * Create the build context
      */
     constructor(options: Options) {
-        this.substrStrategy = options.substr ?? 'substring';
+        options.substrStrategy ??= 'substring';
+        options.invokeResultFunction ??= false;
+
+        this.options = options as Required<Options>;
     }
 
     /**
-     * Store a value
+     * Put a value to the store (should only add object)
      */
-    put(value: any) {
-        if (typeof value !== 'function' && typeof value !== 'symbol' && typeof value !== 'object')
-            return JSON.stringify(value);
-
+    insert(value: any) {
         const key = storePrefix + this.currentID.toString();
         ++this.currentID;
 
@@ -50,17 +51,34 @@ export default class BuildContext {
     }
 
     /**
+     * Get the statement to return the value
+     */
+    yield(value: any) {
+        if (typeof value === 'undefined') return 'return';
+        if (typeof value !== 'function') {
+            if (this.options.invokeResultFunction)
+                throw new Error(`Handler ${value} is not a function`);
+
+            if (typeof value !== 'symbol' && typeof value !== 'object')
+                return `return ${JSON.stringify(value)}`;
+        }
+
+        const key = this.insert(value);
+        return this.options.invokeResultFunction ? `return ${key}${getArgs(value)}` : `return ${key}`;
+    }
+
+    /**
      * Get the string statement after sliced from idx
      */
     slicePath(idx: string) {
-        return idx === '0' ? 'path' : `path.${this.substrStrategy}(${idx})`;
+        return idx === '0' ? 'path' : `path.${this.options.substrStrategy}(${idx})`;
     }
 
     /**
      * Get the substring statement after sliced from start to end
      */
     substringPath(start: string, end: string) {
-        return `path.${this.substrStrategy}(${start},${end})`;
+        return `path.${this.options.substrStrategy}(${start},${end})`;
     }
 
     /**
@@ -87,7 +105,7 @@ export default class BuildContext {
             return result.join('');
         }
 
-        return `if(path.${this.substrStrategy}(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
+        return `if(path.${this.options.substrStrategy}(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
     }
 
     /**
