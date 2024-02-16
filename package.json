@@ -1,5 +1,5 @@
 {
-  "name": "@bitjs/blitz",
+  "name": "@bit-js/blitz",
   "main": "lib/index.js",
   "version": "1.0.0",
   "type": "module",

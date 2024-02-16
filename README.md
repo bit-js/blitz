@@ -2,7 +2,7 @@
 The fastest JavaScript router.
 
 ```ts
-import Blitz from '@bitjs/blitz';
+import Blitz from '@bit-js/blitz';
 
 // Create the router
 const router = new Blitz();

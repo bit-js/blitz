@@ -1,4 +1,4 @@
-import { internal } from '@bitjs/blitz';
+import { internal } from '@bit-js/blitz';
 import paths from './paths';
 import { test, expect } from 'bun:test';
 

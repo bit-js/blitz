@@ -12,7 +12,7 @@
         "declaration": true,
         "emitDeclarationOnly": true,
         "paths": {
-            "@bitjs/blitz": [
+            "@bit-js/blitz": [
                 ".."
             ]
         }
