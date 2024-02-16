@@ -17,7 +17,7 @@
     "jitless": "BUN_JSC_UseJit=0 bun run"
   },
   "repository": {
-    "url": "https://github.com/bit-js/blitz"
+    "url": "git+https://github.com/bit-js/blitz.git"
   },
   "exports": {
     ".": "./lib/index.js",

@@ -21,7 +21,7 @@ const fetch = router.build();
 ```
 
 ## Context
-The request context.
+The request context contains:
 - `path`: The request pathname (Does not start with a slash).
 - `pathStart`: The request pathname start index in the request URL.
 - `pathEnd`: The request pathname end index in the request URL.
