@@ -29,4 +29,4 @@ The request context.
 - `headers`: Response headers.
 - `status`: Response status.
 - `statusText`: Response status text.
-- `req`: The raw request object
+- `req`: The raw request object.
