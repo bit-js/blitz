@@ -1,13 +1,11 @@
 import { Radix } from './radix';
-import type { tree } from './radix';
+import type { MatchFunction, Options } from './radix/tree/types';
 import { Context, type Handler } from './types';
 
 export * as internal from './radix';
 
 type RadixRouter = Radix<Handler>;
-type Matcher = tree.MatchFunction<any>;
-
-const defaultOptions: tree.Options = { invokeResultFunction: true };
+type Matcher = MatchFunction<any>;
 
 export default class Blitz {
     /**
@@ -18,7 +16,7 @@ export default class Blitz {
     /**
      * Map method routers
      */
-    readonly methodRouter: Record<string, RadixRouter> = {};
+    methodRouter: Record<string, RadixRouter> | null = null;
 
     /**
      * Fallback router if methods do not match
@@ -31,29 +29,18 @@ export default class Blitz {
     fallback: Handler = noop;
 
     /**
-     * Radix router options
-     */
-    readonly options: tree.Options;
-
-    /**
      * Create a router
      */
-    constructor(options?: tree.Options) {
-        if (typeof options === 'undefined')
-            this.options = defaultOptions;
-        else {
-            options.invokeResultFunction = true;
-            this.options = options;
-        }
+    constructor(readonly options: Options = {}) {
+        this.options = options;
     }
 
     /**
      * Register a handler
      */
     put(method: string, path: string, handler: Handler) {
-        if (!(method in this.methodRouter))
-            this.methodRouter[method] = new Radix(this.options);
-
+        this.methodRouter ??= {};
+        this.methodRouter[method] ??= new Radix();
         this.methodRouter[method].put(path, handler);
     }
 
@@ -61,47 +48,28 @@ export default class Blitz {
      * Register a handler for all method
      */
     handle(path: string, handler: Handler) {
-        if (this.fallbackRouter === null)
-            this.fallbackRouter = new Radix(this.options);
-
+        this.fallbackRouter ??= new Radix();
         this.fallbackRouter.put(path, handler);
     }
 
     /**
-     * Return the request handler
+     * Build the router
      */
-    get fetch(): (req: Request) => any {
-        const { methodRouter, fallbackRouter, fallback } = this;
+    build(): (req: Request) => any {
+        const { methodRouter, fallbackRouter } = this;
 
-        // Compile method matchers
-        const methodMatcher: Record<string, Matcher> = {};
+        // Use fallbackRouter matcher as fallback if it exist
+        const fallback = fallbackRouter === null ? this.fallback : fallbackRouter.buildCaller(this.options, this.fallback);
 
-        // No all method handler handling
-        if (fallbackRouter === null) {
-            // Register fallback to method matchers
-            for (const method in methodRouter)
-                methodMatcher[method] = methodRouter[method].build(fallback).find;
+        // Call the fallback directly if no method router exists
+        if (methodRouter === null) return (req: Request) => fallback(new Context(req));
 
-            return (req: Request) => (methodMatcher[req.method] ?? fallback)(new Context(req));
-        }
-
-        // Ignore fallback of matchers
+        // Compile method callers (It invokes the function directly instead of returning the matching function)
+        const methodCaller: Record<string, Matcher> = {};
         for (const method in methodRouter)
-            methodMatcher[method] = methodRouter[method].build(null).find;
+            methodCaller[method] = methodRouter[method].buildCaller(this.options, fallback);
 
-        // Handle with fallback matcher
-        const fallbackMatcher = fallbackRouter.build(fallback).find;
-        return (req: Request) => {
-            const ctx = new Context(req);
-
-            const matcher = methodMatcher[req.method];
-            if (typeof matcher !== 'undefined') {
-                const handler = matcher(ctx);
-                if (handler !== null) return handler(ctx);
-            }
-
-            return fallbackMatcher(ctx);
-        }
+        return (req: Request) => (methodCaller[req.method] ?? fallback)(new Context(req));
     }
 }
 

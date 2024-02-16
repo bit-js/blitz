@@ -8,9 +8,9 @@ app.put('GET', '/', () => new Response('Hi'));
 app.put('GET', '/user/:id', ctx => new Response((ctx.params as any).id));
 
 // Fetch
-const { fetch } = app;
+const f = app.build();
 async function get(path: string): Promise<string> {
-    return fetch(new Request(`http://localhost:3000${path}`)).text();
+    return await f(new Request(`http://localhost:3000${path}`)).text();
 }
 
 // Test real stuff

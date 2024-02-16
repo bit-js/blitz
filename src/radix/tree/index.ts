@@ -6,18 +6,18 @@ import BuildContext from '../compiler/context';
 import { ctxName, staticMatch } from '../compiler/constants';
 import { defaultArgs } from '../compiler/getArgs';
 
-export class Tree<T> {
+export class Tree {
     /**
      * The root node of the tree
      */
-    root: Node<T> = new Node('/');
+    root: Node = new Node('/');
 
     /**
      * Built-in static matching
      */
-    staticMap: Record<string, T> | null = null;
+    staticMap: Record<string, any> | null = null;
 
-    store(path: string, store: T): T {
+    store(path: string, store: any): any {
         // If path includes parameters or wildcard add to the tree
         if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
             this.storeDynamic(path, store);
@@ -31,7 +31,7 @@ export class Tree<T> {
     /**
      * Store static path
      */
-    storeStatic(path: string, store: T): void {
+    storeStatic(path: string, store: any): void {
         // Path should not start with '/'
         if (path.charCodeAt(0) === 47) path = path.slice(1);
         if (path.charCodeAt(path.length - 1) === 47) path = path.slice(0, -1);
@@ -43,7 +43,7 @@ export class Tree<T> {
     /**
      * Register a path
      */
-    storeDynamic(path: string, store: T): void {
+    storeDynamic(path: string, store: any): void {
         // Path should start with '/'
         if (path.charCodeAt(0) !== 47) path = '/' + path;
 
@@ -100,7 +100,7 @@ export class Tree<T> {
                     }
 
                     // Create new node
-                    const childNode = new Node<T>(part.slice(j));
+                    const childNode = new Node(part.slice(j));
                     node.inert.set(part.charCodeAt(j), childNode);
                     node = childNode;
 
@@ -109,7 +109,7 @@ export class Tree<T> {
 
                 if (part[j] !== node.part[j]) {
                     // Split the node
-                    const newChild = new Node<T>(part.slice(j));
+                    const newChild = new Node(part.slice(j));
                     const oldNode = node.clone(node.part.slice(j));
 
                     node.reset(node.part.slice(0, j));
@@ -138,7 +138,7 @@ export class Tree<T> {
     /**
      * Create static map check
      */
-    createStaticCheck(ctx: BuildContext, options: Options) {
+    createStaticCheck(ctx: BuildContext, options: Options): string {
         // Only need static check if static map exists
         return this.staticMap === null ? '' : `const ${staticMatch}=${ctx.insert(this.staticMap)}[${ctxName}.path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${options.invokeResultFunction ? defaultArgs : ''};`;
     }
@@ -146,7 +146,7 @@ export class Tree<T> {
     /**
      * Create dynamic path check
      */
-    createDynamicCheck(ctx: BuildContext) {
+    createDynamicCheck(ctx: BuildContext): string {
         // Declare all necessary variables and compile the root node
         // Dynamic check should end with ';' or a close bracket
         return `const{path}=${ctxName},{length}=path;${this.root.compile(ctx, '0', false, false).join('')}`;
@@ -155,7 +155,7 @@ export class Tree<T> {
     /**
      * Create fallback call
      */
-    createFallbackCall(ctx: BuildContext, fallback: T | null) {
+    createFallbackCall(ctx: BuildContext, fallback: any): string {
         // Only need the fallback if root wildcard does not exist
         return this.root.wildcardStore === null ? ctx.yield(fallback) : '';
     }
@@ -163,7 +163,7 @@ export class Tree<T> {
     /**
      * Build a function
      */
-    compile(options: Options, fallback: T | null): MatchFunction<T> {
+    compile(options: Options, fallback: any): MatchFunction<any> {
         // Global context
         const ctx: BuildContext = new BuildContext(options);
         const body = `return ${ctxName}=>{${this.createStaticCheck(ctx, options)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx, fallback)}}`;
@@ -201,8 +201,3 @@ function replaceValue(_: string, value: any) {
     return value;
 }
 
-// Export all from submodules
-export * from './nodes';
-export * from './types';
-export { default as checkParam } from './checkParam';
-export { default as splitPath } from './splitPath';

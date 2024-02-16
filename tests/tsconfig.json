@@ -12,8 +12,8 @@
         "declaration": true,
         "emitDeclarationOnly": true,
         "paths": {
-            "@internal/*": [
-                "../src/radix/*"
+            "@bitjs/blitz": [
+                ".."
             ]
         }
     },

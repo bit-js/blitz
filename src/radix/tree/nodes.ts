@@ -1,8 +1,5 @@
 import type BuildContext from '../compiler/context';
-
-import {
-    ctxParamsName, currentParamIdx, prevParamIdx
-} from '../compiler/constants';
+import { ctxParamsName, currentParamIdx, prevParamIdx } from '../compiler/constants';
 import plus from '../compiler/plus';
 
 import checkParam from './checkParam';
@@ -10,10 +7,10 @@ import checkParam from './checkParam';
 /**
  * A parametric node
  */
-export class ParamNode<T> {
+export class ParamNode {
     paramName: string;
-    store: T | null = null;
-    inert: Node<T> | null = null;
+    store: any = null;
+    inert: Node | null = null;
 
     constructor(name: string) {
         checkParam(name);
@@ -24,12 +21,12 @@ export class ParamNode<T> {
 /**
  * A static node
  */
-export class Node<T> {
+export class Node {
     part: string;
-    store: T | null = null;
-    inert: Map<number, Node<T>> | null = null;
-    params: ParamNode<T> | null = null;
-    wildcardStore: T | null = null;
+    store: any = null;
+    inert: Map<number, Node> | null = null;
+    params: ParamNode | null = null;
+    wildcardStore: any = null;
 
     /**
      * Create a node
@@ -52,8 +49,8 @@ export class Node<T> {
     /**
      * Clone the current node with new part
      */
-    clone(part: string): Node<T> {
-        const node = new Node<T>(part);
+    clone(part: string): Node {
+        const node: Node = new Node(part);
 
         node.store = this.store;
         node.inert = this.inert;
@@ -66,16 +63,16 @@ export class Node<T> {
     /**
      * Register a node as children
      */
-    adopt(child: Node<T>): void {
+    adopt(child: Node): void {
         this.inert!.set(child.part.charCodeAt(0), child);
     }
 
     /**
      * Set parametric node
      */
-    param(paramName: string): ParamNode<T> {
+    param(paramName: string): ParamNode {
         if (this.params === null)
-            this.params = new ParamNode<T>(paramName);
+            this.params = new ParamNode(paramName);
         else if (this.params.paramName !== paramName)
             throw new Error(
                 `Cannot create route with parameter "${paramName}" \
@@ -234,5 +231,4 @@ export class Node<T> {
 
         return builder;
     };
-
 }

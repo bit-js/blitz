@@ -1,4 +1,4 @@
-import type { Options } from '../tree';
+import type { Options } from '../tree/types';
 import { storePrefix } from './constants';
 import getArgs from './getArgs';
 import plus from './plus';
@@ -40,7 +40,7 @@ export default class BuildContext {
     /**
      * Put a value to the store (should only add object)
      */
-    insert(value: any) {
+    insert(value: any): string {
         const key = storePrefix + this.currentID.toString();
         ++this.currentID;
 
@@ -53,7 +53,7 @@ export default class BuildContext {
     /**
      * Get the statement to return the value
      */
-    yield(value: any) {
+    yield(value: any): string {
         if (typeof value === 'undefined') return 'return';
         if (typeof value !== 'function') {
             if (this.options.invokeResultFunction)
@@ -70,28 +70,28 @@ export default class BuildContext {
     /**
      * Get the string statement after sliced from idx
      */
-    slicePath(idx: string) {
+    slicePath(idx: string): string {
         return idx === '0' ? 'path' : `path.${this.options.substrStrategy}(${idx})`;
     }
 
     /**
      * Get the substring statement after sliced from start to end
      */
-    substringPath(start: string, end: string) {
+    substringPath(start: string, end: string): string {
         return `path.${this.options.substrStrategy}(${start},${end})`;
     }
 
     /**
      * Get the index of a token in the path string
      */
-    searchPath(token: string, startIdx: string) {
+    searchPath(token: string, startIdx: string): string {
         return `path.indexOf('${token}'${startIdx === '0' ? '' : ',' + startIdx})`;
     }
 
     /**
      * Create top level if statement
      */
-    createTopLevelCheck(part: string, prevPathLen: string, pathLen: string) {
+    createTopLevelCheck(part: string, prevPathLen: string, pathLen: string): string {
         // Faster than doing substring
         if (part.length < 15) {
             const result: string[] = [];
@@ -111,7 +111,7 @@ export default class BuildContext {
     /**
      * Build a function from a function body and inject stored parameters
      */
-    build(body: string) {
+    build(body: string): any {
         return Function(...this.paramsKeys, body)(...this.paramsValues);
     }
 }

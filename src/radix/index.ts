@@ -5,12 +5,12 @@ export class Radix<T> {
     /**
      * The data structure to store parametric and wildcard routes
      */
-    readonly tree: Tree<T> = new Tree();
+    readonly tree: Tree = new Tree();
 
     /**
      * Create a radix tree router
      */
-    constructor(public readonly options: Options = {}) { }
+    constructor() { }
 
     /**
      * Register routes
@@ -37,15 +37,20 @@ export class Radix<T> {
     }
 
     /**
-     * Build a find function
+     * Build a function to match and find the value
      */
-    build(fallback: T | null): this {
-        this.find = this.tree.compile(this.options, fallback);
-        return this;
+    buildMatcher(options: Options, fallback: T | null): MatchFunction<T> {
+        options.invokeResultFunction = false;
+        return this.tree.compile(options, fallback);
     }
 
-    find: MatchFunction<T>;
+    /**
+     * Build a function to match and call the value
+     */
+    buildCaller(options: Options, fallback: T | null): MatchFunction<ReturnOf<T>> {
+        options.invokeResultFunction = true;
+        return this.tree.compile(options, fallback) as any;
+    }
 }
 
-export * as tree from './tree';
-export * as compiler from './compiler';
+type ReturnOf<T> = T extends (...args: any) => infer R ? R : any;
