@@ -9,19 +9,14 @@ type Matcher = MatchFunction<any>;
 
 export default class Blitz {
     /**
-     * Methods that should be supported
-     */
-    static readonly methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'TRACE'] as const;
-
-    /**
      * Map method routers
      */
-    methodRouter: Record<string, RadixRouter> | null = null;
+    methodRouter?: Record<string, RadixRouter>;
 
     /**
      * Fallback router if methods do not match
      */
-    fallbackRouter: RadixRouter | null = null;
+    fallbackRouter?: RadixRouter;
 
     /**
      * Fallback handler
@@ -59,10 +54,13 @@ export default class Blitz {
         const { methodRouter, fallbackRouter } = this;
 
         // Use fallbackRouter matcher as fallback if it exist
-        const fallback = fallbackRouter === null ? this.fallback : fallbackRouter.buildCaller(this.options, this.fallback);
+        const fallback = typeof fallbackRouter === 'undefined'
+            ? this.fallback
+            : fallbackRouter.buildCaller(this.options, this.fallback);
 
         // Call the fallback directly if no method router exists
-        if (methodRouter === null) return (req: Request) => fallback(new Context(req));
+        if (typeof methodRouter === 'undefined')
+            return (req: Request) => fallback(new Context(req));
 
         // Compile method callers (It invokes the function directly instead of returning the matching function)
         const methodCaller: Record<string, Matcher> = {};
