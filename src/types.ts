@@ -81,14 +81,14 @@ export class Context<Params, State> implements BaseContext, ResponseInit {
     /**
      * Return a response based on the context
      */
-    send<T extends BodyInit>(init: T): BasicResponse<T> {
+    send<const T extends BodyInit>(init: T): BasicResponse<T> {
         return new Response(init, this) as any;
     };
 
     /**
      * Return a response based on the context
      */
-    json<T>(init: T): JsonResponse<T> {
+    json<const T>(init: T): JsonResponse<T> {
         this.headers['Content-Type'] ??= 'application/json';
         return new Response(JSON.stringify(init), this);
     }

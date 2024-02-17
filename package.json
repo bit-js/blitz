@@ -1,14 +1,14 @@
 {
   "name": "@bit-js/blitz",
   "main": "lib/index.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest",
     "mitata": "^0.1.6",
     "typescript": "^5.0.0"
   },
-  "description": "An insanely fast router for all runtimes",
+  "description": "The fastest JavaScript URL router",
   "types": "./lib/index.d.ts",
   "scripts": {
     "jit-test": "BUN_JSC_jitPolicyScale=0.0 BUN_JSC_thresholdForOptimizeSoon=0.0 BUN_JSC_thresholdForJITSoon=0.0 bun test",
