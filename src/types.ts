@@ -77,6 +77,30 @@ export class Context<Params, State> implements BaseContext, ResponseInit {
      * Status text
      */
     statusText: string;
+
+    /**
+     * Return a response based on the context
+     */
+    send<T extends BodyInit>(init: T): BasicResponse<T> {
+        return new Response(init, this) as any;
+    };
+
+    /**
+     * Return a response based on the context
+     */
+    json<T>(init: T): JsonResponse<T> {
+        this.headers['Content-Type'] ??= 'application/json';
+        return new Response(JSON.stringify(init), this);
+    }
+}
+
+export interface BasicResponse<T extends BodyInit> extends Response {
+    readonly text: () => Promise<T extends string ? T : string>;
+    readonly clone: () => BasicResponse<T>;
+}
+
+export interface JsonResponse<T> extends Response {
+    readonly json: () => Promise<T>;
 }
 
 /**
