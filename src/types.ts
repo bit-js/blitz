@@ -52,9 +52,3 @@ export class Context<Params> implements BaseContext, ResponseInit {
     statusText: string;
 }
 
-/**
- * Base request handler
- */
-export interface Handler<Params = unknown> {
-    (c: Context<Params>): any;
-}

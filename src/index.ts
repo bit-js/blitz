@@ -1,9 +1,10 @@
 import { Radix } from './radix';
 import type { MatchFunction, Options } from './radix/tree/types';
-import { Context, type Handler } from './types';
+import { Context } from './types';
 
 export * as internal from './radix';
 
+type Handler = (c: Context<any>) => any;
 type RadixRouter = Radix<Handler>;
 type Matcher = MatchFunction<any>;
 
