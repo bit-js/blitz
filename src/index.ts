@@ -50,7 +50,7 @@ export default class Blitz {
     /**
      * Build the router
      */
-    build(): (req: Request) => any {
+    build(Construct: typeof Context = Context): (req: Request) => any {
         const { methodRouter, fallbackRouter } = this;
 
         // Use fallbackRouter matcher as fallback if it exist
@@ -60,7 +60,7 @@ export default class Blitz {
 
         // Call the fallback directly if no method router exists
         if (typeof methodRouter === 'undefined')
-            return (req: Request) => fallback(new Context(req));
+            return (req: Request) => fallback(new Construct(req));
 
         // Compile method callers (It invokes the function directly instead of returning the matching function)
         const methodCaller: Record<string, Matcher> = {};
@@ -75,3 +75,4 @@ export default class Blitz {
 const noop = () => null;
 
 export * from './types';
+

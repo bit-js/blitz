@@ -112,7 +112,7 @@ export class Node {
 
         if (this.store !== null)
             // Check whether the current length is equal to current path length
-            builder.push(`if(length===${pathLen})${ctx.yield(this.store)};`);
+            builder.push(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);

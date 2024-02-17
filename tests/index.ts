@@ -3,8 +3,8 @@ import Blitz from '..';
 // Simple app
 const app = new Blitz();
 
-app.put('GET', '/', ctx => ctx.send('Hi'));
-app.put('GET', '/user/:id', ctx => ctx.json(ctx.params));
+app.put('GET', '/', () => new Response('Hi'));
+app.put('GET', '/user/:id', ctx => new Response((ctx.params as any).id));
 
 export default {
     fetch: app.build()

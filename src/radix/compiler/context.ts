@@ -31,7 +31,6 @@ export default class BuildContext {
      * Create the build context
      */
     constructor(options: Options) {
-        options.substrStrategy ??= 'substring';
         options.invokeResultFunction ??= false;
 
         this.options = options as Required<Options>;
@@ -71,14 +70,14 @@ export default class BuildContext {
      * Get the string statement after sliced from idx
      */
     slicePath(idx: string): string {
-        return idx === '0' ? 'path' : `path.${this.options.substrStrategy}(${idx})`;
+        return idx === '0' ? 'path' : `path.substring(${idx})`;
     }
 
     /**
      * Get the substring statement after sliced from start to end
      */
     substringPath(start: string, end: string): string {
-        return `path.${this.options.substrStrategy}(${start},${end})`;
+        return `path.substring(${start},${end})`;
     }
 
     /**
@@ -105,7 +104,7 @@ export default class BuildContext {
             return result.join('');
         }
 
-        return `if(path.${this.options.substrStrategy}(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
+        return `if(path.substring(${prevPathLen},${pathLen})==='${part.substring(1)}')`;
     }
 
     /**

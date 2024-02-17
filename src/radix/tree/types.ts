@@ -17,7 +17,6 @@ export interface Context {
  * Router option
  */
 export interface Options {
-    substrStrategy?: 'substring' | 'slice';
     invokeResultFunction?: boolean;
 }
 

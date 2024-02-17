@@ -19,31 +19,14 @@ export type Params<Path extends string> = Path extends `${infer Part}/${infer Re
 /**
  * Request context
  */
-export class Context<Params, State> implements BaseContext, ResponseInit {
-    /**
-     * Parsed pathname
-     */
+export class Context<Params> implements BaseContext, ResponseInit {
+    // Parsed properties
     readonly path: string;
-
-    /**
-     * Start path index
-     */
     readonly pathStart: number;
-
-    /**
-     * End path index
-     */
     readonly pathEnd: number;
 
-    /**
-     * Request params
-     */
+    // Parsed parameters (Must be manually typed by the framework dev)
     readonly params: Params;
-
-    /**
-     * Parsed state. States should not be directly modified
-     */
-    readonly state: State;
 
     /**
      * Parse the request
@@ -63,49 +46,15 @@ export class Context<Params, State> implements BaseContext, ResponseInit {
         }
     }
 
-    /**
-     * Headers
-     */
+    // ResponseInit options
     readonly headers: Record<string, string> = {};
-
-    /**
-     * Status code
-     */
     status: number;
-
-    /**
-     * Status text
-     */
     statusText: string;
-
-    /**
-     * Return a response based on the context
-     */
-    send<const T extends BodyInit>(init: T): BasicResponse<T> {
-        return new Response(init, this) as any;
-    };
-
-    /**
-     * Return a response based on the context
-     */
-    json<const T>(init: T): JsonResponse<T> {
-        this.headers['Content-Type'] ??= 'application/json';
-        return new Response(JSON.stringify(init), this);
-    }
-}
-
-export interface BasicResponse<T extends BodyInit> extends Response {
-    readonly text: () => Promise<T extends string ? T : string>;
-    readonly clone: () => BasicResponse<T>;
-}
-
-export interface JsonResponse<T> extends Response {
-    readonly json: () => Promise<T>;
 }
 
 /**
- * A request handler
+ * Base request handler
  */
-export interface Handler<Params = unknown, State = unknown> {
-    (c: Context<Params, State>): any;
+export interface Handler<Params = unknown> {
+    (c: Context<Params>): any;
 }

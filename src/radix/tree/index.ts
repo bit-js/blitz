@@ -149,7 +149,7 @@ export class Tree {
     createDynamicCheck(ctx: BuildContext): string {
         // Declare all necessary variables and compile the root node
         // Dynamic check should end with ';' or a close bracket
-        return `const{path}=${ctxName},{length}=path;${this.root.compile(ctx, '0', false, false).join('')}`;
+        return `const{path}=${ctxName};${this.root.compile(ctx, '0', false, false).join('')}`;
     }
 
     /**
