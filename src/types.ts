@@ -4,17 +4,23 @@ import { type Context as BaseContext } from './radix/tree/types';
  * Infer an URL segment parameter
  */
 type Segment<T extends string> =
-    T extends `:${infer Param}`
-    ? { [K in Param]: string }
-    : T extends '*'
-    ? { $: string }
-    : {};
+    T extends `:${infer Param}` ? Param
+    : T extends '*' ? '$'
+    : never;
+
+/**
+ * Infer URL parameter keys from path
+ */
+export type ParamsKey<Path extends string> = Path extends `${infer Part}/${infer Rest}`
+    ? Segment<Part> | ParamsKey<Rest> : Segment<Path>;
+
 
 /**
  * Infer URL parameters from path
  */
-export type Params<Path extends string> = Path extends `${infer Part}/${infer Rest}`
-    ? Segment<Part> & Params<Rest> : Segment<Path>;
+export type Params<Path extends string, Value = string> = {
+    [K in ParamsKey<Path>]: Value;
+}
 
 /**
  * Request context
@@ -51,4 +57,3 @@ export class Context<Params> implements BaseContext, ResponseInit {
     status: number;
     statusText: string;
 }
-
