@@ -6,11 +6,13 @@ import BuildContext from '../compiler/context';
 import { ctxName, staticMatch } from '../compiler/constants';
 import { defaultArgs } from '../compiler/getArgs';
 
+const noop = () => null;
+
 export class Tree {
     /**
      * The root node of the tree
      */
-    root: Node = new Node('/');
+    root: Node | null = null;
 
     /**
      * Built-in static matching
@@ -52,7 +54,7 @@ export class Tree {
         if (isWildcard) path = path.slice(0, -1);
 
         const [inertParts, paramParts] = splitPath(path);
-        let node = this.root, paramPartsIndex = 0;
+        let node = (this.root ??= new Node('/')), paramPartsIndex = 0;
 
         for (let i = 0, { length } = inertParts; i < length; ++i) {
             if (i !== 0) {
@@ -149,7 +151,7 @@ export class Tree {
     createDynamicCheck(ctx: BuildContext): string {
         // Declare all necessary variables and compile the root node
         // Dynamic check should end with ';' or a close bracket
-        return `const{path}=${ctxName};${this.root.compile(ctx, '0', false, false).join('')}`;
+        return `const{path}=${ctxName};${this.root!.compile(ctx, '0', false, false).join('')}`;
     }
 
     /**
@@ -157,13 +159,25 @@ export class Tree {
      */
     createFallbackCall(ctx: BuildContext, fallback: any): string {
         // Only need the fallback if root wildcard does not exist
-        return this.root.wildcardStore === null ? ctx.yield(fallback) : '';
+        return this.root!.wildcardStore === null ? ctx.yield(fallback) : '';
     }
 
     /**
      * Build a function
      */
     compile(options: Options, fallback: any): MatchFunction<any> {
+        // Do only static match
+        if (this.root === null) {
+            const { staticMap } = this;
+
+            if (options.invokeResultFunction === true) {
+                fallback ??= noop;
+                return staticMap === null ? fallback : ctx => (staticMap[ctx.path] ?? fallback)(ctx);
+            }
+
+            return staticMap === null ? () => fallback : ctx => staticMap[ctx.path] ?? fallback;
+        }
+
         // Global context
         const ctx: BuildContext = new BuildContext(options);
         const body = `return ${ctxName}=>{${this.createStaticCheck(ctx, options)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx, fallback)}}`;
