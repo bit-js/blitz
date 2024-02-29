@@ -4,7 +4,6 @@ import type { MatchFunction, Options } from './types';
 
 import BuildContext from '../compiler/context';
 import { ctxName, staticMatch } from '../compiler/constants';
-import { defaultArgs } from '../compiler/getArgs';
 
 const noop = () => null;
 
@@ -140,9 +139,11 @@ export class Tree {
     /**
      * Create static map check
      */
-    createStaticCheck(ctx: BuildContext, options: Options): string {
+    createStaticCheck(ctx: BuildContext): string {
+        const { staticMap } = this;
+
         // Only need static check if static map exists
-        return this.staticMap === null ? '' : `const ${staticMatch}=${ctx.insert(this.staticMap)}[${ctxName}.path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${options.invokeResultFunction ? defaultArgs : ''};`;
+        return staticMap === null ? '' : `const ${staticMatch}=${ctx.insert(staticMap)}[${ctxName}.path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${ctx.defaultArgs()};`;
     }
 
     /**
@@ -180,7 +181,7 @@ export class Tree {
 
         // Global context
         const ctx: BuildContext = new BuildContext(options);
-        const body = `return ${ctxName}=>{${this.createStaticCheck(ctx, options)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx, fallback)}}`;
+        const body = `return ${ctxName}=>{${this.createStaticCheck(ctx)}${this.createDynamicCheck(ctx)}${this.createFallbackCall(ctx, fallback)}}`;
 
         return ctx.build(body);
     }

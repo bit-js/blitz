@@ -49,16 +49,21 @@ export default class Blitz {
     }
 
     /**
+     * Build the fallback handler (include fallbackRouter)
+     */
+    buildFallback() {
+        return typeof this.fallbackRouter === 'undefined'
+            ? this.fallback
+            : this.fallbackRouter.buildCaller(this.options, this.fallback);
+    }
+
+    /**
      * Build the router
      */
     build(Construct: typeof Context = Context): (req: Request) => any {
-        const { methodRouter, fallbackRouter } = this;
+        const { methodRouter } = this, fallback = this.buildFallback();
 
         // Use fallbackRouter matcher as fallback if it exist
-        const fallback = typeof fallbackRouter === 'undefined'
-            ? this.fallback
-            : fallbackRouter.buildCaller(this.options, this.fallback);
-
         // Call the fallback directly if no method router exists
         if (typeof methodRouter === 'undefined')
             return (req: Request) => fallback(new Construct(req));

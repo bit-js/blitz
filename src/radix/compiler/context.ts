@@ -1,6 +1,6 @@
 import type { Options } from '../tree/types';
 import { storePrefix } from './constants';
-import getArgs from './getArgs';
+import getArgs, { defaultArgs } from './getArgs';
 import plus from './plus';
 
 /**
@@ -64,6 +64,13 @@ export default class BuildContext {
 
         const key = this.insert(value);
         return this.options.invokeResultFunction ? `return ${key}${getArgs(value)}` : `return ${key}`;
+    }
+
+    /**
+     * Return default call arguments if invokeResultFunction is true
+     */
+    defaultArgs() {
+        return this.options.invokeResultFunction ? defaultArgs : '';
     }
 
     /**
