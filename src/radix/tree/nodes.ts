@@ -2,8 +2,6 @@ import type BuildContext from '../compiler/context';
 import { ctxParamsName, currentParamIdx, prevParamIdx } from '../compiler/constants';
 import plus from '../compiler/plus';
 
-import checkParam from './checkParam';
-
 /**
  * A parametric node
  */
@@ -13,7 +11,7 @@ export class ParamNode {
     inert: Node | null = null;
 
     constructor(name: string) {
-        checkParam(name);
+        if (name === '$') throw new Error('Parameter name should not be "$" to avoid collision with wildcard parameter');
         this.paramName = name;
     }
 }
