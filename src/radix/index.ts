@@ -54,3 +54,5 @@ export class Radix<T> {
 }
 
 type ReturnOf<T> = T extends (...args: any) => infer R ? R : any;
+
+export { Tree };

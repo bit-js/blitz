@@ -165,7 +165,7 @@ export class Node {
             const nextSlashIndex = ctx.searchPath('/', prevIndex),
                 hasInert = params.inert !== null,
                 hasStore = params.store !== null,
-                key = params.paramName;
+                { paramName } = params;
 
             // Declare the current param index variable if inert is found
             if (hasInert) {
@@ -184,11 +184,14 @@ export class Node {
 
                 builder.push(ctxParamsName);
                 builder.push(isChildParam
-                    ? `.${key}=${value};`
-                    : `={${key}:${value}};`);
+                    ? `.${paramName}=${value};`
+                    : `={${paramName}:${value}};`);
 
                 // Return store
-                builder.push(`${ctx.yield(this.params.store)}}`);
+                builder.push(ctx.yield(this.params.store));
+
+                // End the if statement
+                builder.push('}');
             }
 
             if (hasInert) {
@@ -201,8 +204,8 @@ export class Node {
                 // Assign param
                 builder.push(ctxParamsName);
                 builder.push(isChildParam
-                    ? `.${key}=${value};`
-                    : `={${key}:${value}};`
+                    ? `.${paramName}=${value};`
+                    : `={${paramName}:${value}};`
                 );
 
                 // Handle inert
@@ -212,8 +215,7 @@ export class Node {
                     isChildParam
                 ));
 
-                if (!hasStore)
-                    builder.push('}');
+                if (!hasStore) builder.push('}');
             }
         }
 
@@ -223,7 +225,9 @@ export class Node {
             // Assign wildcard parameter
             builder.push(ctxParamsName);
             builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
-            builder.push(`${ctx.yield(this.wildcardStore)};`);
+            builder.push(ctx.yield(this.wildcardStore));
+
+            builder.push(';');
         }
 
         // Root does not include a check

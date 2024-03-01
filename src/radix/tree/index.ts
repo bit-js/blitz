@@ -22,9 +22,9 @@ export class Tree {
         // If path includes parameters or wildcard add to the tree
         if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
             this.storeDynamic(path, store);
+
         // Static path matches faster with a map
-        else
-            this.storeStatic(path, store);
+        else this.storeStatic(path, store);
 
         return store;
     }

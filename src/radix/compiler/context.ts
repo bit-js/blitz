@@ -55,9 +55,6 @@ export default class BuildContext {
     yield(value: any): string {
         if (typeof value === 'undefined') return 'return';
         if (typeof value !== 'function') {
-            if (this.options.invokeResultFunction)
-                throw new Error(`Handler ${value} is not a function`);
-
             if (typeof value !== 'symbol' && typeof value !== 'object')
                 return `return ${JSON.stringify(value)}`;
         }
