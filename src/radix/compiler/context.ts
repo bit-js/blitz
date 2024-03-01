@@ -1,5 +1,5 @@
 import type { Options } from '../tree/types';
-import { storePrefix } from './constants';
+import { storePrefix, ctxName } from './constants';
 import getArgs, { defaultArgs } from './getArgs';
 import plus from './plus';
 
@@ -30,9 +30,8 @@ export default class BuildContext {
     /**
      * Create the build context
      */
-    constructor(options: Options) {
+    constructor(options: Options, readonly builder: string[] = []) {
         options.invokeResultFunction ??= false;
-
         this.options = options as Required<Options>;
     }
 
@@ -112,9 +111,25 @@ export default class BuildContext {
     }
 
     /**
+     * Add a part to the string builder
+     */
+    concat(part: string) {
+        this.builder.push(part);
+    }
+
+    /**
+     * Release the result string of the string builder and reset the builder
+     */
+    flush() {
+        const res = this.builder.join('');
+        this.builder.length = 0;
+        return res;
+    }
+
+    /**
      * Build a function from a function body and inject stored parameters
      */
-    build(body: string): any {
-        return Function(...this.paramsKeys, body)(...this.paramsValues);
+    build(): any {
+        return Function(...this.paramsKeys, `return (${ctxName})=>{${this.flush()}}`)(...this.paramsValues);
     }
 }
