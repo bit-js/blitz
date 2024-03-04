@@ -93,23 +93,24 @@ export class Node {
         // Whether the index tracker for parameters exists (not creating many variables)
         isNestedChildParam: boolean
     ): void {
-        const
-            isNotRoot = this.part.length !== 1,
-            // Get current path length from root node to this node
-            pathLen = plus(
-                prevPathLen,
-                this.part.length - 1
-            );
+        const { builder } = ctx;
+        const isNotRoot = this.part.length !== 1;
+
+        // Get current path length from root node to this node
+        const pathLen = plus(
+            prevPathLen,
+            this.part.length - 1
+        );
 
         // No condition check for root (no scope should be created)
         if (isNotRoot) {
-            ctx.concat(ctx.createTopLevelCheck(this.part, prevPathLen, pathLen));
-            ctx.concat('{');
+            builder.push(ctx.createTopLevelCheck(this.part, prevPathLen, pathLen));
+            builder.push('{');
         }
 
         if (this.store !== null)
             // Check whether the current length is equal to current path length
-            ctx.concat(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
+            builder.push(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
@@ -117,31 +118,29 @@ export class Node {
 
             // Create an if statement for only one item
             if (this.inert.size === 1) {
-                ctx.concat(`if(path.charCodeAt(${pathLen})===${currentPair.value[0]}){`);
-
+                builder.push(`if(path.charCodeAt(${pathLen})===${currentPair.value[0]}){`);
                 currentPair.value[1].compile(
                     ctx, nextPathLen, isChildParam, isNestedChildParam
                 );
-
-                ctx.concat('}');
+                builder.push('}');
             }
 
             // Create a switch for multiple items
             else {
-                ctx.concat(`switch(path.charCodeAt(${pathLen})){`);
+                builder.push(`switch(path.charCodeAt(${pathLen})){`);
 
                 do {
                     // Create a case statement for each char code
-                    ctx.concat(`case ${currentPair.value[0]}:`);
+                    builder.push(`case ${currentPair.value[0]}:`);
                     currentPair.value[1].compile(
                         ctx, nextPathLen, isChildParam, isNestedChildParam
                     );
-                    ctx.concat('break;');
+                    builder.push('break;');
 
                     currentPair = pairs.next();
                 } while (!currentPair.done);
 
-                ctx.concat('}');
+                builder.push('}');
             }
         }
 
@@ -155,8 +154,8 @@ export class Node {
             // if current parameter is the second one
             if (isChildParam) {
                 // Reuse the variable for third parameter and so on
-                if (!isNestedChildParam) ctx.concat('let ');
-                ctx.concat(`${prevParamIdx}=${pathLen};`);
+                if (!isNestedChildParam) builder.push('let ');
+                builder.push(`${prevParamIdx}=${pathLen};`);
             }
 
             const nextSlashIndex = ctx.searchPath('/', prevIndex),
@@ -166,36 +165,36 @@ export class Node {
 
             // Declare the current param index variable if inert is found
             if (hasInert) {
-                if (!isChildParam) ctx.concat('let ');
-                ctx.concat(`${currentParamIdx}=${nextSlashIndex};`);
+                if (!isChildParam) builder.push('let ');
+                builder.push(`${currentParamIdx}=${nextSlashIndex};`);
             }
 
             // Check slash index and get the parameter value if store is found
             if (hasStore) {
-                ctx.concat(`if(${hasInert ? currentParamIdx : nextSlashIndex}===-1){`);
+                builder.push(`if(${hasInert ? currentParamIdx : nextSlashIndex}===-1){`);
 
                 // Set param
                 const value = ctx.slicePath(prevIndex);
 
-                ctx.concat(ctxParamsName);
-                ctx.concat(isChildParam
+                builder.push(ctxParamsName);
+                builder.push(isChildParam
                     ? `.${paramName}=${value};`
                     : `={${paramName}:${value}};`);
-                ctx.concat(ctx.yield(this.params.store));
+                builder.push(ctx.yield(this.params.store));
 
                 // End the if statement
-                ctx.concat('}');
+                builder.push('}');
             }
 
             if (hasInert) {
                 const value = ctx.substringPath(prevIndex, currentParamIdx);
 
                 // Additional check if no store is provided (if store exists the previous part should match and return the store)
-                if (!hasStore) ctx.concat(`if(${currentParamIdx}!==-1){`);
+                if (!hasStore) builder.push(`if(${currentParamIdx}!==-1){`);
 
                 // Assign param
-                ctx.concat(ctxParamsName);
-                ctx.concat(isChildParam
+                builder.push(ctxParamsName);
+                builder.push(isChildParam
                     ? `.${paramName}=${value};`
                     : `={${paramName}:${value}};`
                 );
@@ -207,7 +206,7 @@ export class Node {
                     isChildParam
                 );
 
-                if (!hasStore) ctx.concat('}');
+                if (!hasStore) builder.push('}');
             }
         }
 
@@ -215,14 +214,14 @@ export class Node {
             const value = ctx.slicePath(pathLen);
 
             // Assign wildcard parameter
-            ctx.concat(ctxParamsName);
-            ctx.concat(isChildParam ? `.$=${value};` : `={$:${value}};`)
-            ctx.concat(ctx.yield(this.wildcardStore));
+            builder.push(ctxParamsName);
+            builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
+            builder.push(ctx.yield(this.wildcardStore));
 
-            ctx.concat(';');
+            builder.push(';');
         }
 
         // Root does not include a check
-        if (isNotRoot) ctx.concat('}');
+        if (isNotRoot) builder.push('}');
     };
 }

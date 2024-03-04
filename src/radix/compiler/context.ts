@@ -111,25 +111,9 @@ export default class BuildContext {
     }
 
     /**
-     * Add a part to the string builder
-     */
-    concat(part: string) {
-        this.builder.push(part);
-    }
-
-    /**
-     * Release the result string of the string builder and reset the builder
-     */
-    flush() {
-        const res = this.builder.join('');
-        this.builder.length = 0;
-        return res;
-    }
-
-    /**
      * Build a function from a function body and inject stored parameters
      */
     build(): any {
-        return Function(...this.paramsKeys, `return (${ctxName})=>{${this.flush()}}`)(...this.paramsValues);
+        return Function(...this.paramsKeys, `return (${ctxName})=>{${this.builder.join('')}}`)(...this.paramsValues);
     }
 }

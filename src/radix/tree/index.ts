@@ -155,13 +155,13 @@ export class Tree {
 
         // Create static routes check
         if (staticMap !== null)
-            ctx.concat(`const ${staticMatch}=${ctx.insert(staticMap)}[path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${ctx.defaultArgs()};`);
+            ctx.builder.push(`const ${staticMatch}=${ctx.insert(staticMap)}[path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${ctx.defaultArgs()};`);
 
         // Create dynamic routes check
         root.compile(ctx, '0', false, false);
 
         // Only need the fallback if root wildcard does not exist
-        if (root.wildcardStore === null) ctx.concat(ctx.yield(fallback));
+        if (root.wildcardStore === null) ctx.builder.push(ctx.yield(fallback));
 
         return ctx.build();
     }
