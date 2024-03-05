@@ -155,7 +155,7 @@ export class Tree {
 
         // Create static routes check
         if (staticMap !== null)
-            ctx.builder.push(`const ${staticMatch}=${ctx.insert(staticMap)}[path];if(typeof ${staticMatch}!=='undefined')return ${staticMatch}${ctx.defaultArgs()};`);
+            ctx.builder.push(`const ${staticMatch}=${ctx.insert(staticMap)}[path];if(typeof ${staticMatch}!=='undefined')${ctx.yieldToken(staticMatch)};`);
 
         // Create dynamic routes check
         root.compile(ctx, '0', false, false);

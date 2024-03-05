@@ -114,12 +114,13 @@ export class Node {
 
         if (this.inert !== null) {
             const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
-            let currentPair = pairs.next();
 
             // Create an if statement for only one item
             if (this.inert.size === 1) {
-                builder.push(`if(path.charCodeAt(${pathLen})===${currentPair.value[0]}){`);
-                currentPair.value[1].compile(
+                const inertPair = pairs.next().value;
+
+                builder.push(`if(path.charCodeAt(${pathLen})===${inertPair[0]}){`);
+                inertPair[1].compile(
                     ctx, nextPathLen, isChildParam, isNestedChildParam
                 );
                 builder.push('}');
@@ -129,6 +130,7 @@ export class Node {
             else {
                 builder.push(`switch(path.charCodeAt(${pathLen})){`);
 
+                let currentPair = pairs.next();
                 do {
                     // Create a case statement for each char code
                     builder.push(`case ${currentPair.value[0]}:`);

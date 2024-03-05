@@ -63,10 +63,10 @@ export default class BuildContext {
     }
 
     /**
-     * Return default call arguments if invokeResultFunction is true
+     * Get the statement to return the token value
      */
-    defaultArgs() {
-        return this.options.invokeResultFunction ? defaultArgs : '';
+    yieldToken(value: string) {
+        return this.options.invokeResultFunction ? `return ${value}${defaultArgs}` : `return ${value}`;
     }
 
     /**
