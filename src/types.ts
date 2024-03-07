@@ -58,10 +58,6 @@ export class Context<Params> implements BaseContext, ResponseInit {
     statusText: string;
 }
 
-export class DefaultContext<Params> extends Context<Params> {
-    headers = {};
-}
-
 export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
 
 export function extendContext(C: any, defaultOpts?: ContextOptions): any {

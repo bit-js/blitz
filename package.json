@@ -1,7 +1,7 @@
 {
   "name": "@bit-js/blitz",
   "main": "lib/index.js",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest",

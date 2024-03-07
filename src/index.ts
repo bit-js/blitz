@@ -1,10 +1,10 @@
 import { Radix } from './radix';
 import type { MatchFunction, Options } from './radix/tree/types';
-import { Context } from './types';
+import { Context as BaseContext } from './types';
 
 export * as internal from './radix';
 
-type Handler = (c: Context<any>) => any;
+type Handler = (c: BaseContext<any>) => any;
 type RadixRouter = Radix<Handler>;
 type Matcher = MatchFunction<any>;
 
@@ -60,7 +60,7 @@ export default class Blitz {
     /**
      * Build the router
      */
-    build(Construct: typeof Context = Context): (req: Request) => any {
+    build(Construct: typeof BaseContext = BaseContext): (req: Request) => any {
         const { methodRouter } = this, fallback = this.buildFallback();
 
         // Use fallbackRouter matcher as fallback if it exist
@@ -73,7 +73,7 @@ export default class Blitz {
         for (const method in methodRouter)
             methodCaller[method] = methodRouter[method].buildCaller(this.options, fallback);
 
-        return (req: Request) => (methodCaller[req.method] ?? fallback)(new Context(req));
+        return (req: Request) => (methodCaller[req.method] ?? fallback)(new Construct(req));
     }
 }
 
