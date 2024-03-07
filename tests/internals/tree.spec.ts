@@ -8,11 +8,10 @@ const pathsCount = paths.length;
 for (let i = 0; i < pathsCount; ++i)
     router.put(paths[i], i);
 
-// Compile the tree
-const f = router.buildMatcher({
-    substrStrategy: 'slice'
-}, pathsCount);
+console.log(router.tree.debug(2));
 
+// Compile the tree
+const f = router.buildMatcher({}, pathsCount);
 console.log(f.toString());
 
 for (let i = 0; i < pathsCount; ++i) {

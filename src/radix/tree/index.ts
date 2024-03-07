@@ -1,5 +1,5 @@
 import splitPath from './splitPath';
-import { Node } from './nodes';
+import { InertStore, Node } from './nodes';
 import type { MatchFunction, Options } from './types';
 
 import BuildContext from '../compiler/context';
@@ -71,23 +71,19 @@ export class Tree {
             let part = inertParts[i];
             for (let j = 0; ;) {
                 if (j === part.length) {
-                    if (j < node.part.length) {
-                        const oldNode = node.clone(node.part.slice(j));
-
+                    if (j < node.part.length)
                         // Move the current node down
-                        node.reset(part);
-                        node.adopt(oldNode);
-                    }
+                        node.reset(part, node.clone(node.part.slice(j)));
 
                     break;
                 }
 
                 // Add static child
                 if (j === node.part.length) {
-                    if (node.inert === null) node.inert = new Map();
+                    if (node.inert === null) node.inert = new InertStore();
                     else {
                         // Only perform hashing once instead of .has & .get
-                        const inert = node.inert.get(part.charCodeAt(j));
+                        const inert = node.inert.store[part.charCodeAt(j).toString()];
 
                         // Re-run loop with existing static node
                         if (typeof inert !== 'undefined') {
@@ -100,7 +96,7 @@ export class Tree {
 
                     // Create new node
                     const childNode = new Node(part.slice(j));
-                    node.inert.set(part.charCodeAt(j), childNode);
+                    node.inert.put(childNode);
                     node = childNode;
 
                     break;
@@ -111,9 +107,8 @@ export class Tree {
                     const newChild = new Node(part.slice(j));
                     const oldNode = node.clone(node.part.slice(j));
 
-                    node.reset(node.part.slice(0, j));
-                    node.adopt(oldNode);
-                    node.adopt(newChild);
+                    node.reset(node.part.slice(0, j), oldNode);
+                    node.inert!.put(newChild);
 
                     node = newChild;
                     break;

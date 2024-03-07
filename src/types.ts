@@ -53,7 +53,23 @@ export class Context<Params> implements BaseContext, ResponseInit {
     }
 
     // ResponseInit options
-    readonly headers: Record<string, string> = {};
+    headers: Record<string, string>;
     status: number;
     statusText: string;
+}
+
+export class DefaultContext<Params> extends Context<Params> {
+    headers = {};
+}
+
+export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
+
+export function extendContext(defaultOpts?: ContextOptions): any {
+    if (typeof defaultOpts === 'undefined') return DefaultContext;
+
+    const parts: string[] = [];
+    for (const prop in defaultOpts)
+        parts.push(`${prop}=${JSON.stringify(defaultOpts[prop])}`);
+
+    return Function(`return (C)=>{return class A extends C{${parts.join()}}}`)()(Context);
 }

@@ -16,15 +16,31 @@ export class ParamNode {
     }
 }
 
+export class InertStore {
+    store: Record<string, Node> = {};
+    size: number = 0;
+    lastChild: Node;
+
+    put(item: Node) {
+        this.lastChild = item;
+        this.store[item.key()] = item;
+        ++this.size;
+    }
+}
+
 /**
  * A static node
  */
 export class Node {
     part: string;
     store: any = null;
-    inert: Map<number, Node> | null = null;
+    inert: InertStore | null = null;
     params: ParamNode | null = null;
     wildcardStore: any = null;
+
+    key() {
+        return this.part.charCodeAt(0).toString();
+    }
 
     /**
      * Create a node
@@ -36,11 +52,12 @@ export class Node {
     /**
      * Reset a node. Use this to move down a node then add children
      */
-    reset(part: string): void {
+    reset(part: string, firstChild: Node): void {
         this.part = part;
 
         // Next step should be adding children
-        this.inert = new Map();
+        this.inert = new InertStore();
+        this.inert.put(firstChild);
         this.store = this.params = this.wildcardStore = null;
     }
 
@@ -56,13 +73,6 @@ export class Node {
         node.wildcardStore = this.wildcardStore;
 
         return node;
-    }
-
-    /**
-     * Register a node as children
-     */
-    adopt(child: Node): void {
-        this.inert!.set(child.part.charCodeAt(0), child);
     }
 
     /**
@@ -94,17 +104,15 @@ export class Node {
         isNestedChildParam: boolean
     ): void {
         const { builder } = ctx;
-        const isNotRoot = this.part.length !== 1;
+        const { part } = this;
 
+        const isNotRoot = part.length !== 1;
         // Get current path length from root node to this node
-        const pathLen = plus(
-            prevPathLen,
-            this.part.length - 1
-        );
+        const pathLen = plus(prevPathLen, part.length - 1);
 
         // No condition check for root (no scope should be created)
         if (isNotRoot) {
-            builder.push(ctx.createTopLevelCheck(this.part, prevPathLen, pathLen));
+            builder.push(ctx.createTopLevelCheck(part, prevPathLen, pathLen));
             builder.push('{');
         }
 
@@ -113,14 +121,14 @@ export class Node {
             builder.push(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
 
         if (this.inert !== null) {
-            const pairs = this.inert.entries(), nextPathLen = plus(pathLen, 1);
+            const nextPathLen = plus(pathLen, 1);
 
             // Create an if statement for only one item
             if (this.inert.size === 1) {
-                const inertPair = pairs.next().value;
+                const { lastChild } = this.inert;
 
-                builder.push(`if(path.charCodeAt(${pathLen})===${inertPair[0]}){`);
-                inertPair[1].compile(
+                builder.push(`if(path.charCodeAt(${pathLen})===${lastChild.key()}){`);
+                lastChild.compile(
                     ctx, nextPathLen, isChildParam, isNestedChildParam
                 );
                 builder.push('}');
@@ -128,20 +136,17 @@ export class Node {
 
             // Create a switch for multiple items
             else {
-                builder.push(`switch(path.charCodeAt(${pathLen})){`);
+                const { store } = this.inert;
 
-                let currentPair = pairs.next();
-                do {
+                builder.push(`switch(path.charCodeAt(${pathLen})){`);
+                for (const key in store) {
                     // Create a case statement for each char code
-                    builder.push(`case ${currentPair.value[0]}:`);
-                    currentPair.value[1].compile(
+                    builder.push(`case ${key}:`);
+                    store[key].compile(
                         ctx, nextPathLen, isChildParam, isNestedChildParam
                     );
                     builder.push('break;');
-
-                    currentPair = pairs.next();
-                } while (!currentPair.done);
-
+                }
                 builder.push('}');
             }
         }
@@ -182,7 +187,7 @@ export class Node {
                 builder.push(isChildParam
                     ? `.${paramName}=${value};`
                     : `={${paramName}:${value}};`);
-                builder.push(ctx.yield(this.params.store));
+                builder.push(ctx.yield(params.store));
 
                 // End the if statement
                 builder.push('}');
