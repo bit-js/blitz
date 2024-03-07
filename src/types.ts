@@ -64,12 +64,12 @@ export class DefaultContext<Params> extends Context<Params> {
 
 export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
 
-export function extendContext(defaultOpts?: ContextOptions): any {
-    if (typeof defaultOpts === 'undefined') return DefaultContext;
+export function extendContext(C: any, defaultOpts?: ContextOptions): any {
+    if (typeof defaultOpts === 'undefined') return C;
 
     const parts: string[] = [];
     for (const prop in defaultOpts)
         parts.push(`${prop}=${JSON.stringify(defaultOpts[prop])}`);
 
-    return Function(`return (C)=>{return class A extends C{${parts.join()}}}`)()(Context);
+    return Function(`return (C)=>{return class A extends C{${parts.join()}}}`)()(C);
 }
