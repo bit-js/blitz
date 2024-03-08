@@ -15,11 +15,11 @@ export default function splitPath(path: string): PathParts {
 
         start = path.indexOf('/', paramIdx + 1);
         if (start === -1) {
-            paramParts.push(path.substring(paramIdx));
+            paramParts.push(path.substring(paramIdx + 1));
             return parts;
         }
 
-        paramParts.push(path.substring(paramIdx, start));
+        paramParts.push(path.substring(paramIdx + 1, start));
         paramIdx = path.indexOf(':', start + 1);
     };
 

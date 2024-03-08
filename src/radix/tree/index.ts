@@ -30,7 +30,7 @@ export class Tree {
      * Store static path
      */
     storeStatic(path: string, store: any): void {
-        // Path should not start with '/'
+        // Path should not start or end with '/'
         if (path.charCodeAt(0) === 47) path = path.slice(1);
         if (path.charCodeAt(path.length - 1) === 47) path = path.slice(0, -1);
 
@@ -55,7 +55,7 @@ export class Tree {
         for (let i = 0, { length } = inertParts; i < length; ++i) {
             if (i !== 0) {
                 // Set param on the node
-                const params = node.param(paramParts[paramPartsIndex].slice(1));
+                const params = node.param(paramParts[paramPartsIndex]);
                 ++paramPartsIndex;
 
                 // Set inert
@@ -119,7 +119,7 @@ export class Tree {
 
         if (paramPartsIndex < paramParts.length)
             // The final part is a parameter
-            node.param(paramParts[paramPartsIndex].slice(1)).store ??= store;
+            node.param(paramParts[paramPartsIndex]).store ??= store;
 
         // The final part is a wildcard
         if (isWildcard) node.wildcardStore ??= store;
