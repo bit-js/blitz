@@ -3,7 +3,6 @@ import { InertStore, Node } from './nodes';
 import type { MatchFunction, Options } from './types';
 
 import BuildContext from '../compiler/context';
-import { ctxName, staticMatch } from '../compiler/constants';
 
 export class Tree {
     /**
@@ -50,7 +49,7 @@ export class Tree {
         const isWildcard = path.charCodeAt(path.length - 1) === 42;
         if (isWildcard) path = path.slice(0, -1);
 
-        const [inertParts, paramParts] = splitPath(path);
+        const { inertParts, paramParts } = splitPath(path);
         let node = (this.root ??= new Node('/')), paramPartsIndex = 0;
 
         for (let i = 0, { length } = inertParts; i < length; ++i) {
@@ -146,11 +145,11 @@ export class Tree {
         }
 
         // Global build context
-        const ctx: BuildContext = new BuildContext(options, [`const{path}=${ctxName};`]);
+        const ctx: BuildContext = new BuildContext(options, ['const{path}=c;']);
 
         // Create static routes check
         if (staticMap !== null)
-            ctx.builder.push(`const ${staticMatch}=${ctx.insert(staticMap)}[path];if(typeof ${staticMatch}!=='undefined')${ctx.yieldToken(staticMatch)};`);
+            ctx.builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
 
         // Create dynamic routes check
         root.compile(ctx, '0', false, false);

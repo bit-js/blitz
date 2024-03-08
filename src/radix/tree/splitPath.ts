@@ -1,12 +1,12 @@
-export type PathParts = [
-    inertParts: string[],
-    paramParts: string[]
-];
+export class PathParts {
+    inertParts: string[] = [];
+    paramParts: string[] = []
+};
 
 // Split inert and param parts
 export default function splitPath(path: string): PathParts {
-    const inertParts: string[] = [];
-    const paramParts: string[] = [];
+    const parts = new PathParts();
+    const { inertParts, paramParts } = parts;
 
     let paramIdx = path.indexOf(':'), start = 0;
     while (paramIdx !== -1) {
@@ -16,7 +16,7 @@ export default function splitPath(path: string): PathParts {
         start = path.indexOf('/', paramIdx + 1);
         if (start === -1) {
             paramParts.push(path.substring(paramIdx));
-            return [inertParts, paramParts];
+            return parts;
         }
 
         paramParts.push(path.substring(paramIdx, start));
@@ -24,6 +24,6 @@ export default function splitPath(path: string): PathParts {
     };
 
     inertParts.push(path.substring(start));
-    return [inertParts, paramParts];
+    return parts;
 }
 

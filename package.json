@@ -22,5 +22,6 @@
   "exports": {
     ".": "./lib/index.js",
     "./*": "./lib/*.js"
-  }
+  },
+  "sideEffects": "false"
 }

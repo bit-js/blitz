@@ -3,7 +3,7 @@ export default function plus(num: string, val: number): string {
 
     const plusIdx = num.indexOf('+');
     return plusIdx === -1
-        ? isNaN(+num)
+        ? Number.isNaN(+num)
             ? `${num}+${val.toString()}`
             : (+num + val).toString()
         : `${num.substring(0, plusIdx)}+${+(num.substring(plusIdx + 1)) + val}`;

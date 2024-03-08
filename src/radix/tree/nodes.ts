@@ -1,5 +1,4 @@
 import type BuildContext from '../compiler/context';
-import { ctxParamsName, currentParamIdx, prevParamIdx } from '../compiler/constants';
 import plus from '../compiler/plus';
 
 /**
@@ -23,7 +22,7 @@ export class InertStore {
 
     put(item: Node) {
         this.lastChild = item;
-        this.store[item.key()] = item;
+        this.store[item.key] = item;
         ++this.size;
     }
 }
@@ -33,27 +32,33 @@ export class InertStore {
  */
 export class Node {
     part: string;
+    key: string;
+
     store: any = null;
     inert: InertStore | null = null;
     params: ParamNode | null = null;
     wildcardStore: any = null;
 
-    key() {
-        return this.part.charCodeAt(0).toString();
+    /**
+     * Set part and the corresponding inert key for that part before compilation
+     */
+    setPart(part: string) {
+        this.part = part;
+        this.key = part.charCodeAt(0).toString();
     }
 
     /**
      * Create a node
      */
     constructor(part: string) {
-        this.part = part;
+        this.setPart(part);
     }
 
     /**
      * Reset a node. Use this to move down a node then add children
      */
     reset(part: string, firstChild: Node): void {
-        this.part = part;
+        this.setPart(part);
 
         // Next step should be adding children
         this.inert = new InertStore();
@@ -106,11 +111,11 @@ export class Node {
         const { builder } = ctx;
         const { part } = this;
 
-        const isNotRoot = part.length !== 1;
         // Get current path length from root node to this node
         const pathLen = plus(prevPathLen, part.length - 1);
 
         // No condition check for root (no scope should be created)
+        const isNotRoot = part.length !== 1;
         if (isNotRoot) {
             builder.push(ctx.createTopLevelCheck(part, prevPathLen, pathLen));
             builder.push('{');
@@ -127,7 +132,7 @@ export class Node {
             if (this.inert.size === 1) {
                 const { lastChild } = this.inert;
 
-                builder.push(`if(path.charCodeAt(${pathLen})===${lastChild.key()}){`);
+                builder.push(`if(path.charCodeAt(${pathLen})===${lastChild.key}){`);
                 lastChild.compile(
                     ctx, nextPathLen, isChildParam, isNestedChildParam
                 );
@@ -152,17 +157,19 @@ export class Node {
         }
 
         if (this.params !== null) {
+            // 'i': Current param index
+            // 'p': Previous param index
             const { params } = this;
 
             // Reuse the variable if declared before
-            const prevIndex = isChildParam ? prevParamIdx : pathLen;
+            const prevIndex = isChildParam ? 'p' : pathLen;
 
             // Declare a variable to save previous param index 
             // if current parameter is the second one
             if (isChildParam) {
                 // Reuse the variable for third parameter and so on
                 if (!isNestedChildParam) builder.push('let ');
-                builder.push(`${prevParamIdx}=${pathLen};`);
+                builder.push(`p=${pathLen};`);
             }
 
             const nextSlashIndex = ctx.searchPath('/', prevIndex),
@@ -173,17 +180,17 @@ export class Node {
             // Declare the current param index variable if inert is found
             if (hasInert) {
                 if (!isChildParam) builder.push('let ');
-                builder.push(`${currentParamIdx}=${nextSlashIndex};`);
+                builder.push(`i=${nextSlashIndex};`);
             }
 
             // Check slash index and get the parameter value if store is found
             if (hasStore) {
-                builder.push(`if(${hasInert ? currentParamIdx : nextSlashIndex}===-1){`);
+                builder.push(`if(${hasInert ? 'i' : nextSlashIndex}===-1){`);
 
                 // Set param
                 const value = ctx.slicePath(prevIndex);
 
-                builder.push(ctxParamsName);
+                builder.push('c.params');
                 builder.push(isChildParam
                     ? `.${paramName}=${value};`
                     : `={${paramName}:${value}};`);
@@ -194,13 +201,13 @@ export class Node {
             }
 
             if (hasInert) {
-                const value = ctx.substringPath(prevIndex, currentParamIdx);
+                const value = ctx.substringPath(prevIndex, 'i');
 
                 // Additional check if no store is provided (if store exists the previous part should match and return the store)
-                if (!hasStore) builder.push(`if(${currentParamIdx}!==-1){`);
+                if (!hasStore) builder.push(`if(i!==-1){`);
 
                 // Assign param
-                builder.push(ctxParamsName);
+                builder.push('c.params');
                 builder.push(isChildParam
                     ? `.${paramName}=${value};`
                     : `={${paramName}:${value}};`
@@ -208,7 +215,7 @@ export class Node {
 
                 // Handle inert
                 params.inert!.compile(
-                    ctx, plus(currentParamIdx, 1), true,
+                    ctx, 'i+1', true,
                     // If this is the first parameter inert this will be false
                     isChildParam
                 );
@@ -221,7 +228,7 @@ export class Node {
             const value = ctx.slicePath(pathLen);
 
             // Assign wildcard parameter
-            builder.push(ctxParamsName);
+            builder.push('c.params');
             builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
             builder.push(ctx.yield(this.wildcardStore));
 

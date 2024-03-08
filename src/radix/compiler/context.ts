@@ -1,5 +1,4 @@
 import type { Options } from '../tree/types';
-import { storePrefix, ctxName } from './constants';
 import getArgs, { defaultArgs } from './getArgs';
 import plus from './plus';
 
@@ -39,7 +38,7 @@ export default class BuildContext {
      * Put a value to the store (should only add object)
      */
     insert(value: any): string {
-        const key = storePrefix + this.currentID.toString();
+        const key = 'f' + this.currentID.toString();
         ++this.currentID;
 
         this.paramsKeys.push(key);
@@ -114,6 +113,6 @@ export default class BuildContext {
      * Build a function from a function body and inject stored parameters
      */
     build(): any {
-        return Function(...this.paramsKeys, `return (${ctxName})=>{${this.builder.join('')}}`)(...this.paramsValues);
+        return Function(...this.paramsKeys, `return (c)=>{${this.builder.join('')}}`)(...this.paramsValues);
     }
 }
