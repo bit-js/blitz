@@ -138,10 +138,10 @@ export class Tree {
             if (options.invokeResultFunction === true) {
                 // Fallback needs to be callable
                 const fnFallback = typeof fallback === 'function' ? fallback : () => fallback;
-                return staticMap === null ? fallback : ctx => (staticMap[ctx.path] ?? fnFallback)(ctx);
+                return staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fnFallback)(ctx);
             }
 
-            return staticMap === null ? () => fallback : ctx => staticMap[ctx.path] ?? fallback;
+            return staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
         }
 
         // Global build context

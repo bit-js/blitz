@@ -14,8 +14,7 @@ Bun.build({
     target: 'bun',
     outdir: libDir,
     minify: {
-        whitespace: true,
-        syntax: true
+        whitespace: true
     },
     entrypoints: [
         './src/index.ts'
