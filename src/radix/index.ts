@@ -8,11 +8,6 @@ export class Radix<T> {
     readonly tree: Tree = new Tree();
 
     /**
-     * Create a radix tree router
-     */
-    constructor() { }
-
-    /**
      * Register routes
      */
     routes(routes: Route<T>[]): this {

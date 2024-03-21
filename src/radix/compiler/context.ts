@@ -1,5 +1,5 @@
 import type { Options } from '../tree/types';
-import getArgs, { defaultArgs } from './getArgs';
+import getArgs from './getArgs';
 import plus from './plus';
 
 /**
@@ -65,7 +65,7 @@ export default class BuildContext {
      * Get the statement to return the token value
      */
     yieldToken(value: string) {
-        return this.options.invokeResultFunction ? `return ${value}${defaultArgs}` : `return ${value}`;
+        return this.options.invokeResultFunction ? `return ${value}(c)` : `return ${value}`;
     }
 
     /**
