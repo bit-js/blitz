@@ -93,13 +93,15 @@ export default class BuildContext {
      * Create top level if statement
      */
     createTopLevelCheck(part: string, prevPathLen: string, pathLen: string): string {
+        const length = part.length - 1;
+
         // Faster than doing substring
-        if (part.length < 15) {
-            const result: string[] = [];
+        if (length < 16) {
+            const result = new Array<string>(length);
 
             // Chain char code checks
-            for (let i = 1, { length } = part; i < length; ++i) {
-                result.push(`if(path.charCodeAt(${prevPathLen})===${part.charCodeAt(i)})`);
+            for (let i = 0; i < length; ++i) {
+                result[i] = `if(path.charCodeAt(${prevPathLen})===${part.charCodeAt(i + 1)})`;
                 prevPathLen = plus(prevPathLen, 1);
             }
 
