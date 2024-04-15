@@ -75,6 +75,5 @@ export default {
 - `basic`: NextJS route style (wildcard only supports `[...]` and wildcard parameter name is always `$`).
 - `preserve`: No modifications to the path.
 
-
 #### Result
-- The result is a request context with `result` property is the matched result.
+The result is a request context with `result` property is the matched result.
