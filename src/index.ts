@@ -72,5 +72,5 @@ export default class Blitz {
 const noop = () => null;
 
 export * from './types';
-export * as FSRouter from './fsrouter';
+export { default as FileSystemRouter } from './fsrouter';
 

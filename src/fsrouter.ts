@@ -1,14 +1,16 @@
 import { Radix } from './radix';
 import { Context } from './types';
 
-export type Style = (path: string) => string;
-export type DefaultStyle = keyof typeof defaultStyleMap;
-export type GetInfo<T> = (path: string) => T;
+declare namespace Router {
+    export type Style = (path: string) => string;
+    export type DefaultStyle = keyof typeof defaultStyleMap;
+    export type GetInfo<T> = (path: string) => T;
 
-export interface RouterOptions<T> {
-    style?: DefaultStyle | Style;
-    scan(dir: string): IterableIterator<string>;
-    on: GetInfo<T>;
+    export interface Options<T> {
+        style?: DefaultStyle | Style;
+        scan(dir: string): IterableIterator<string> | string[];
+        on: GetInfo<T>;
+    }
 }
 
 /**
@@ -89,7 +91,7 @@ const defaultStyleMap = {
     preserve(path) {
         return path.charCodeAt(0) === 47 ? path : '/' + path;
     }
-} satisfies Record<string, Style>;
+} satisfies Record<string, Router.Style>;
 
 /**
  * Router compile options
@@ -97,18 +99,27 @@ const defaultStyleMap = {
 const compileOptions = { invokeResultFunction: false };
 
 /**
+ * Normalize a file path
+ */
+function normalize(path: string) {
+    return path.replace(/\/\/|\\\\|\\/g, '/');
+}
+
+/**
  * Parsed result with other request info
  */
-export class RequestContext<T> extends Context<any> {
+class RequestContext<T> extends Context<any> {
     public result: T | null;
 }
 
 class Router<T> {
-    readonly style: Style;
-    readonly on: GetInfo<T>;
-    readonly scanFiles: RouterOptions<T>['scan'];
+    static Context = RequestContext;
 
-    constructor({ style, on, scan }: RouterOptions<T>) {
+    readonly style: Router.Style;
+    readonly on: Router.GetInfo<T>;
+    readonly scanFiles: Router.Options<T>['scan'];
+
+    constructor({ style, on, scan }: Router.Options<T>) {
         this.style = typeof style === 'undefined'
             ? defaultStyleMap.basic
             : typeof style === 'string' ?
@@ -137,14 +148,4 @@ class Router<T> {
     }
 }
 
-function normalize(path: string) {
-    return path.replace(/\/\/|\\\\|\\/g, '/');
-}
-
-/**
- * Create a fast file system router
- */
-export function create<T>(options: RouterOptions<T>): Router<T> {
-    return new Router(options);
-}
-
+export default Router;

@@ -35,17 +35,17 @@ The request context contains:
 Other utility routers.
 
 ### FS router
-A file system router API for all runtimes.
+A cross-runtime file system router API.
 
 Example usage with Bun:
 ```ts
-import { FSRouter } from '@bit-js/blitz';
+import { FileSystemRouter } from '@bit-js/blitz';
 
 // A directory scanner
 const glob = new Bun.Glob('**/*');
 
 // Router prototype
-const router = FSRouter.create({
+const router = new FileSystemRouter({
     // on(path): Return the metadata associated to the path to match later
     // This only run once while scanning to retrieve the metadata
     on: Bun.file,
