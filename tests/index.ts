@@ -1,4 +1,4 @@
-import Blitz from '..';
+import Blitz from '@bit-js/blitz';
 
 // Simple app
 const app = new Blitz();

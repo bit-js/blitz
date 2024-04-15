@@ -26,13 +26,18 @@ export type Params<Path extends string, Value = string> = {
  * Request context
  */
 export class Context<Params> implements BaseContext, ResponseInit {
-    // Parsed properties
-    readonly path: string;
-    readonly pathStart: number;
-    readonly pathEnd: number;
+    path: string;
+
+    pathStart: number;
+    pathEnd: number;
 
     // Parsed parameters (Must be manually typed by the framework dev)
     readonly params: Params;
+
+    // ResponseInit options
+    headers: Record<string, string>;
+    status: number;
+    statusText: string;
 
     /**
      * Parse the request
@@ -51,11 +56,6 @@ export class Context<Params> implements BaseContext, ResponseInit {
             this.pathEnd = end;
         }
     }
-
-    // ResponseInit options
-    headers: Record<string, string>;
-    status: number;
-    statusText: string;
 }
 
 export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
