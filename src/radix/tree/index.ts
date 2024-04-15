@@ -31,8 +31,10 @@ export class Tree {
      */
     storeStatic(path: string, store: any): void {
         // Path should not start or end with '/'
-        if (path.charCodeAt(0) === 47) path = path.slice(1);
-        if (path.charCodeAt(path.length - 1) === 47) path = path.slice(0, -1);
+        if (path.charCodeAt(0) === 47) path = path.substring(1);
+
+        const lastIdx = path.length - 1;
+        if (path.charCodeAt(lastIdx) === 47) path = path.substring(0, lastIdx);
 
         this.staticMap ??= {};
         this.staticMap[path] ??= store;
@@ -67,12 +69,12 @@ export class Tree {
                 node = params.inert;
             }
 
-            let part = inertParts[i];
+            let inertPart = inertParts[i];
             for (let j = 0; ;) {
-                if (j === part.length) {
+                if (j === inertPart.length) {
                     if (j < node.part.length)
                         // Move the current node down
-                        node.reset(part, node.clone(node.part.slice(j)));
+                        node.reset(inertPart, node.clone(node.part.substring(j)));
 
                     break;
                 }
@@ -82,31 +84,31 @@ export class Tree {
                     if (node.inert === null) node.inert = new InertStore();
                     else {
                         // Only perform hashing once instead of .has & .get
-                        const inert = node.inert.store[part.charCodeAt(j).toString()];
+                        const inert = node.inert.store[`${inertPart.charCodeAt(j)}`];
 
                         // Re-run loop with existing static node
                         if (typeof inert !== 'undefined') {
                             node = inert;
-                            part = part.slice(j);
+                            inertPart = inertPart.substring(j);
                             j = 0;
                             continue;
                         }
                     }
 
                     // Create new node
-                    const childNode = new Node(part.slice(j));
+                    const childNode = new Node(inertPart.substring(j));
                     node.inert.put(childNode);
                     node = childNode;
 
                     break;
                 }
 
-                if (part[j] !== node.part[j]) {
+                if (inertPart[j] !== node.part[j]) {
                     // Split the node
-                    const newChild = new Node(part.slice(j));
-                    const oldNode = node.clone(node.part.slice(j));
+                    const newChild = new Node(inertPart.substring(j));
+                    const oldNode = node.clone(node.part.substring(j));
 
-                    node.reset(node.part.slice(0, j), oldNode);
+                    node.reset(node.part.substring(0, j), oldNode);
                     node.inert!.put(newChild);
 
                     node = newChild;

@@ -17,12 +17,17 @@ export class ParamNode {
 
 export class InertStore {
     store: Record<string, Node> = {};
+    map: Map<number, Node> = new Map();
+
     size: number = 0;
     lastChild: Node;
 
     put(item: Node) {
         this.lastChild = item;
+
         this.store[item.key] = item;
+        this.map.set(item.key.charCodeAt(0), item);
+
         ++this.size;
     }
 }
