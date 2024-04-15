@@ -87,7 +87,7 @@ const defaultStyleMap = {
     },
 
     preserve(path) {
-        return path;
+        return path.charCodeAt(0) === 47 ? path : '/' + path;
     }
 } satisfies Record<string, Style>;
 
@@ -106,7 +106,7 @@ export class RequestContext<T> extends Context<any> {
 class Router<T> {
     readonly style: Style;
     readonly on: GetInfo<T>;
-    readonly scanDir: RouterOptions<T>['scan'];
+    readonly scanFiles: RouterOptions<T>['scan'];
 
     constructor({ style, on, scan }: RouterOptions<T>) {
         this.style = typeof style === 'undefined'
@@ -116,17 +116,17 @@ class Router<T> {
                 : style;
 
         this.on = on;
-        this.scanDir = scan;
+        this.scanFiles = scan;
     }
 
     /**
      * Scan a directory and returns a matching function
      */
     scan(cwd: string = '.'): (req: Request) => RequestContext<T> {
-        const { on, style, scanDir } = this;
+        const { on, style, scanFiles } = this;
 
         const router = new Radix<T>();
-        for (const path of scanDir(cwd)) router.put(style(path), on(normalize(cwd + path)));
+        for (const path of scanFiles(cwd)) router.put(style(path), on(normalize(cwd + path)));
 
         const match = router.buildMatcher(compileOptions, null);
         return (req: Request) => {
