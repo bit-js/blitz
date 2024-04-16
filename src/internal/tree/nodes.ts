@@ -145,7 +145,6 @@ export class Node {
             parts.push(isRoot ? '(?<$>.+)$()' : '\\/(?<$>.+)$()');
         }
 
-        // ^\/(?:id\/([^/]+)$()|other(?:|.*)$())
         return this.part.replace(/\//g, '\\/') + mergeRegExpParts(parts);
     }
 
