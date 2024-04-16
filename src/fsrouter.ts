@@ -1,4 +1,4 @@
-import { Radix } from './radix';
+import { Radix } from './internal';
 import { Context } from './types';
 
 declare namespace Router {

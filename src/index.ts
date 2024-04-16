@@ -1,8 +1,8 @@
-import { Radix } from './radix';
-import type { MatchFunction, Options } from './radix/tree/types';
+import { Radix } from './internal';
+import type { MatchFunction, Options } from './internal/tree/types';
 import { Context as BaseContext } from './types';
 
-export * as internal from './radix';
+export * as internal from './internal';
 
 type Handler = (c: BaseContext<any>) => any;
 type RadixRouter = Radix<Handler>;

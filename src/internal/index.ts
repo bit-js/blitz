@@ -1,6 +1,8 @@
 import { Tree } from './tree';
 import type { MatchFunction, Options, Route } from './tree/types';
 
+type ReturnOf<T> = T extends (...args: any) => infer R ? R : any;
+
 export class Radix<T> {
     /**
      * The data structure to store parametric and wildcard routes
@@ -47,7 +49,5 @@ export class Radix<T> {
         return this.tree.compile(options, fallback) as any;
     }
 }
-
-type ReturnOf<T> = T extends (...args: any) => infer R ? R : any;
 
 export { Tree };

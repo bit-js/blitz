@@ -124,10 +124,44 @@ export class Tree {
             node.param(paramParts[paramPartsIndex]).store ??= store;
 
         // The final part is a wildcard
-        if (isWildcard) node.wildcardStore ??= store;
+        else if (isWildcard) node.wildcardStore ??= store;
 
         // The final part is static
         else node.store ??= store;
+    }
+
+    /**
+     * Compile to a RegExp matcher
+     */
+    compileRegex(fallback: any): MatchFunction<any> {
+        const { staticMap, root } = this;
+        // Do only static match if no dynamic routes exist
+        if (root === null)
+            return staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
+
+        const store = [];
+        // Slice out first '\/'
+        const pattern = new RegExp('^' + root.compileRegex(store).substring(2));
+
+        return staticMap === null
+            ? (ctx) => {
+                const match = ctx.path.match(pattern);
+                if (match === null) return fallback;
+
+                ctx.params = match.groups;
+                return store[match.indexOf('', 1)];
+            } : (ctx) => {
+                const { path } = ctx;
+
+                const staticMatch = staticMap[path];
+                if (typeof staticMatch !== 'undefined') return staticMatch;
+
+                const match = path.match(pattern);
+                if (match === null) return fallback;
+
+                ctx.params = match.groups;
+                return store[match.indexOf('', 1)];
+            }
     }
 
     /**
@@ -191,4 +225,3 @@ function replaceValue(_: string, value: any) {
 
     return value;
 }
-
