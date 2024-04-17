@@ -105,10 +105,6 @@ export class Node {
      */
     compileRegex(resultStore: any[]): string {
         const parts: string[] = [];
-        const isRoot = this.part.length === 1;
-
-        // Create an offset
-        if (isRoot) resultStore.push(null);
 
         if (this.store !== null) {
             parts.push('$()');
@@ -137,12 +133,14 @@ export class Node {
             if (params.inert !== null)
                 paramParts.push(params.inert.compileRegex(resultStore));
 
-            parts.push(`(?<${params.paramName}>[^/]+${mergeRegExpParts(paramParts)})`);
+            parts.push(`(?<${params.paramName}>[^/]+)${mergeRegExpParts(paramParts)}`);
         }
 
         if (this.wildcardStore !== null) {
+            resultStore.push(null);
             resultStore.push(this.wildcardStore);
-            parts.push(isRoot ? '(?<$>.+)$()' : '\\/(?<$>.+)$()');
+
+            parts.push('(?<$>.+)$()');
         }
 
         return this.part.replace(/\//g, '\\/') + mergeRegExpParts(parts);

@@ -151,8 +151,10 @@ export class Tree {
         if (root === null) return this.createStaticMatcher(options, fallback);
         const { staticMap } = this;
 
-        const store: any[] = [];
+        const store: any[] = [null];
         const pattern = new RegExp('^' + root.compileRegex(store).substring(2)); // Slice out first '\/'
+
+        console.log(pattern.source, 'search/cats/1/2'.match(pattern), store);
 
         // Doing aggresive optimizations
         if (staticMap === null) {
