@@ -58,6 +58,8 @@ export class Context<Params> implements BaseContext, ResponseInit {
     }
 }
 
+export type GenericHandler = (c: Context<any>) => any;
+
 export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
 
 export function extendContext(C: any, defaultOpts?: ContextOptions): any {

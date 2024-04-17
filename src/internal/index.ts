@@ -62,3 +62,4 @@ export class Edge<T> extends BaseRouter<T> {
 }
 
 export { Tree };
+export { Context } from './tree/types'; 

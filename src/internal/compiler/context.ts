@@ -1,4 +1,4 @@
-import type { Options } from '../tree/types';
+import type { Matcher, Options } from '../tree/types';
 import getArgs from './getArgs';
 import plus from './plus';
 
@@ -115,7 +115,7 @@ export default class BuildContext {
     /**
      * Build a function from a function body and inject stored parameters
      */
-    build(): any {
+    build(): Matcher {
         return Function(...this.paramsKeys, `return (c)=>{${this.builder.join('')}}`)(...this.paramsValues);
     }
 }

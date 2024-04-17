@@ -1,5 +1,5 @@
-import { Radix } from './internal';
-import { Context } from './types';
+import { Radix } from '../internal';
+import { Context } from '../types';
 
 declare namespace Router {
     export type Style = (path: string) => string;

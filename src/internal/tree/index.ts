@@ -1,6 +1,6 @@
 import splitPath from './splitPath';
 import { InertStore, Node } from './nodes';
-import type { MatchFunction, Options } from './types';
+import type { Matcher, Options } from './types';
 
 import BuildContext from '../compiler/context';
 
@@ -130,7 +130,7 @@ export class Tree {
         else node.store ??= store;
     }
 
-    createStaticMatcher(options: Options, fallback: any): MatchFunction<any> {
+    createStaticMatcher(options: Options, fallback: any): Matcher {
         const { staticMap } = this;
 
         if (options.invokeResultFunction === true) {
@@ -145,7 +145,7 @@ export class Tree {
     /**
      * Compile to a RegExp matcher
      */
-    compileRegex(options: Options, fallback: any): MatchFunction<any> {
+    compileRegex(options: Options, fallback: any): Matcher {
         const { root } = this;
         // Do only static match if no dynamic routes exist
         if (root === null) return this.createStaticMatcher(options, fallback);
@@ -154,24 +154,20 @@ export class Tree {
         const store: any[] = [null];
         const pattern = new RegExp('^' + root.compileRegex(store).substring(2)); // Slice out first '\/'
 
-        console.log(pattern.source, 'search/cats/1/2'.match(pattern), store);
-
         // Doing aggresive optimizations
         if (staticMap === null) {
             if (options.invokeResultFunction === true) {
-                const fallbackCaller = typeof fallback === 'function' ? fallback : () => fallback;
-
-                return fallbackCaller.length === 0
+                return fallback.length === 0
                     ? (ctx) => {
                         const match = ctx.path.match(pattern);
-                        if (match === null) return fallbackCaller();
+                        if (match === null) return fallback();
 
                         ctx.params = match.groups;
                         return store[match.indexOf('', 1)](ctx);
                     }
                     : (ctx) => {
                         const match = ctx.path.match(pattern);
-                        if (match === null) return fallbackCaller(ctx);
+                        if (match === null) return fallback(ctx);
 
                         ctx.params = match.groups;
                         return store[match.indexOf('', 1)](ctx);
@@ -189,16 +185,14 @@ export class Tree {
 
         // No codegen is allowed here
         if (options.invokeResultFunction === true) {
-            const fallbackCaller = typeof fallback === 'function' ? fallback : () => fallback;
-
-            return fallbackCaller.length === 0
+            return fallback.length === 0
                 ? (ctx) => {
                     const { path } = ctx;
                     const staticMatch = staticMap[path];
                     if (typeof staticMatch !== 'undefined') return staticMatch;
 
                     const match = path.match(pattern);
-                    if (match === null) return fallbackCaller();
+                    if (match === null) return fallback();
 
                     ctx.params = match.groups;
                     return store[match.indexOf('', 1)](ctx);
@@ -209,7 +203,7 @@ export class Tree {
                     if (typeof staticMatch !== 'undefined') return staticMatch;
 
                     const match = path.match(pattern);
-                    if (match === null) return fallbackCaller(ctx);
+                    if (match === null) return fallback(ctx);
 
                     ctx.params = match.groups;
                     return store[match.indexOf('', 1)](ctx);
@@ -232,7 +226,7 @@ export class Tree {
     /**
      * Build a function
      */
-    compile(options: Options, fallback: any): MatchFunction<any> {
+    compile(options: Options, fallback: any): Matcher {
         const { root } = this;
         // Do only static match if no dynamic routes exist
         if (root === null) return this.createStaticMatcher(options, fallback);
