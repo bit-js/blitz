@@ -3,7 +3,7 @@ import { Context as BaseContext, type GenericHandler } from '../types';
 import type { BaseRouter } from '../internal';
 import type { Matcher, Options } from '../internal/tree/types';
 
-export default abstract class Router<BasicRouter extends BaseRouter<GenericHandler>> {
+export default abstract class Router<BasicRouter extends BaseRouter<GenericHandler> = BaseRouter<GenericHandler>> {
     /**
      * Map method routers
      */
