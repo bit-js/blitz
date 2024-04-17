@@ -1,5 +1,4 @@
-import splitPath from './splitPath';
-import { InertStore, Node } from './nodes';
+import { Node, insertStore } from './nodes';
 import type { Matcher, Options } from './types';
 
 import BuildContext from '../compiler/context';
@@ -15,10 +14,13 @@ export class Tree {
      */
     staticMap: Record<string, any> | null = null;
 
+    /**
+     * Register a path
+     */
     store(path: string, store: any): any {
         // If path includes parameters or wildcard add to the tree
         if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
-            this.storeDynamic(path, store);
+            insertStore(this.root ??= new Node('/'), path, store);
 
         // Static path matches faster with a map
         else this.storeStatic(path, store);
@@ -27,7 +29,7 @@ export class Tree {
     }
 
     /**
-     * Store static path
+     * Register a static path
      */
     storeStatic(path: string, store: any): void {
         // Path should not start or end with '/'
@@ -41,93 +43,39 @@ export class Tree {
     }
 
     /**
-     * Register a path
+     * Set a tree as a children
      */
-    storeDynamic(path: string, store: any): void {
-        // Path should start with '/'
-        if (path.charCodeAt(0) !== 47) path = '/' + path;
+    merge(base: string, tree: Tree) {
+        const { staticMap, root } = tree;
 
-        // Ends with '*'
-        const isWildcard = path.charCodeAt(path.length - 1) === 42;
-        if (isWildcard) path = path.slice(0, -1);
-
-        const { inertParts, paramParts } = splitPath(path);
-        let node = (this.root ??= new Node('/')), paramPartsIndex = 0;
-
-        for (let i = 0, { length } = inertParts; i < length; ++i) {
-            if (i !== 0) {
-                // Set param on the node
-                const params = node.param(paramParts[paramPartsIndex]);
-                ++paramPartsIndex;
-
-                // Set inert
-                if (params.inert === null) {
-                    node = params.inert = new Node(inertParts[i]);
-                    continue;
-                }
-
-                node = params.inert;
-            }
-
-            let inertPart = inertParts[i];
-            for (let j = 0; ;) {
-                if (j === inertPart.length) {
-                    if (j < node.part.length)
-                        // Move the current node down
-                        node.reset(inertPart, node.clone(node.part.substring(j)));
-
-                    break;
-                }
-
-                // Add static child
-                if (j === node.part.length) {
-                    if (node.inert === null) node.inert = new InertStore();
-                    else {
-                        // Only perform hashing once instead of .has & .get
-                        const inert = node.inert.store[`${inertPart.charCodeAt(j)}`];
-
-                        // Re-run loop with existing static node
-                        if (typeof inert !== 'undefined') {
-                            node = inert;
-                            inertPart = inertPart.substring(j);
-                            j = 0;
-                            continue;
-                        }
-                    }
-
-                    // Create new node
-                    const childNode = new Node(inertPart.substring(j));
-                    node.inert.put(childNode);
-                    node = childNode;
-
-                    break;
-                }
-
-                if (inertPart[j] !== node.part[j]) {
-                    // Split the node
-                    const newChild = new Node(inertPart.substring(j));
-                    const oldNode = node.clone(node.part.substring(j));
-
-                    node.reset(node.part.substring(0, j), oldNode);
-                    node.inert!.put(newChild);
-
-                    node = newChild;
-                    break;
-                }
-
-                ++j;
+        if (root !== null) {
+            if (this.root === null) this.root = root;
+            else {
+                const mergeRoot = insertStore(this.root, base, null);
+                mergeRoot.mergeWithRoot(root);
             }
         }
 
-        if (paramPartsIndex < paramParts.length)
-            // The final part is a parameter
-            node.param(paramParts[paramPartsIndex]).store ??= store;
+        if (staticMap !== null) {
+            if (base.length === 1) {
+                if (this.staticMap === null) this.staticMap = staticMap;
+                else {
+                    const oldStaticMap = this.staticMap;
+                    for (const key in staticMap)
+                        oldStaticMap[key] ??= staticMap[key];
+                }
+            } else {
+                if (this.staticMap === null) this.staticMap = {};
 
-        // The final part is a wildcard
-        else if (isWildcard) node.wildcardStore ??= store;
+                if (base.charCodeAt(0) === 47) base = base.substring(1);
+                const lastIdx = base.length - 1;
+                if (base.charCodeAt(lastIdx) === 47) base = base.substring(0, lastIdx);
 
-        // The final part is static
-        else node.store ??= store;
+                const oldStaticMap = this.staticMap;
+                for (const key in staticMap)
+                    oldStaticMap[key.length === 0 ? base : `${base}/${key}`] ??= staticMap[key];
+            }
+        }
     }
 
     createStaticMatcher(options: Options, fallback: any): Matcher {

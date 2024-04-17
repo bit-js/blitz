@@ -27,6 +27,13 @@ export abstract class BaseRouter<T> {
     }
 
     /**
+     * Merge with another similar router
+     */
+    merge(base: string, router: this) {
+        this.tree.merge(base, router.tree);
+    }
+
+    /**
      * Build a function to match and find the value
      */
     abstract buildMatcher(options: Options, fallback: T | null): MatchFunction<T>;

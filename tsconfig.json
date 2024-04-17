@@ -6,7 +6,7 @@
         ],
         "esModuleInterop": true,
         "target": "ESNext",
-        "skipDefaultLibCheck": true,
+        "skipLibCheck": true,
         "strictNullChecks": true,
         "moduleResolution": "bundler",
         "declaration": true,

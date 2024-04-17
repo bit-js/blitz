@@ -1,6 +1,7 @@
 import type BuildContext from '../compiler/context';
 import plus from '../compiler/plus';
 import mergeRegExpParts from '../regex/mergeRegExpParts';
+import splitPath from './splitPath';
 
 /**
  * A parametric node
@@ -13,6 +14,27 @@ export class ParamNode {
     constructor(name: string) {
         if (name === '$') throw new Error('Parameter name should not be "$" to avoid collision with wildcard parameter');
         this.paramName = name;
+    }
+
+    merge(node: ParamNode) {
+        if (this.paramName !== node.paramName)
+            throw new Error(
+                `Cannot create merge route with parameter "${node.paramName}" \
+                because a route already exists with a different parameter name \
+                ("${this.paramName}") in the same location`
+            );
+
+        this.store ??= node.store;
+
+        if (node.inert !== null) {
+            if (this.inert === null) this.inert = node.inert;
+            else this.inert.mergeWithInert(node.inert);
+        }
+    }
+
+    mergeWithRoot(node: Node) {
+        if (this.inert === null) this.inert = node;
+        else this.inert.mergeWithRoot(node);
     }
 }
 
@@ -62,11 +84,11 @@ export class Node {
      * Reset a node. Use this to move down a node then add children
      */
     reset(part: string, firstChild: Node): void {
-        this.setPart(part);
+        const inert = new InertStore();
+        inert.put(firstChild);
 
-        // Next step should be adding children
-        this.inert = new InertStore();
-        this.inert.put(firstChild);
+        this.inert = inert;
+        this.setPart(part);
         this.store = this.params = this.wildcardStore = null;
     }
 
@@ -82,6 +104,104 @@ export class Node {
         node.wildcardStore = this.wildcardStore;
 
         return node;
+    }
+
+    /**
+     * Add an inert
+     */
+    setInert(node: Node) {
+        const store = (this.inert ??= new InertStore()).store[node.key];
+
+        if (typeof store === 'undefined') this.inert.put(node);
+        else store.mergeWithInert(node);
+    }
+
+    /**
+     * Clone this
+     */
+    cloneSelf() {
+        return this.clone(this.part);
+    }
+
+    /**
+     * Merge a node with a root node
+     */
+    mergeWithRoot(node: Node) {
+        const { part } = this;
+        const { length } = part;
+
+        // Only slash
+        if (length === 1)
+            return this.mergeExact(node);
+
+        if ((this.store ??= node.store) === null) {
+            if (part.charCodeAt(length - 1) !== 47) this.part += '/';
+            this.mergeExact(node);
+        } else {
+            const newNode = new Node('/');
+            newNode.mergeExact(node);
+            this.setInert(newNode);
+        }
+    }
+
+    /**
+     * Merge a node with an inert node (same first character)
+     */
+    mergeWithInert(node: Node) {
+        const currentPart = this.part;
+        const otherPart = node.part;
+
+        if (currentPart === otherPart)
+            return this.mergeExact(node);
+
+        const prefixEnd = commonPrefixEnd(currentPart, otherPart);
+
+        // ab - abc
+        if (prefixEnd === currentPart.length)
+            return this.setInert(node.clone(otherPart.substring(prefixEnd)));
+
+        // abc - ab
+        if (prefixEnd === otherPart.length) {
+            const newNode = node.cloneSelf();
+            newNode.setInert(this.clone(currentPart.substring(prefixEnd)));
+
+            this.setPart(node.part);
+            this.store = node.store;
+            this.inert = node.inert;
+            this.params = node.params;
+            this.wildcardStore = node.wildcardStore;
+
+            return;
+        }
+
+        // abc - abd
+        this.reset(
+            prefixEnd === 0 ? '/' : currentPart.substring(0, prefixEnd),
+            this.clone(currentPart.substring(prefixEnd))
+        );
+
+        this.inert!.put(node.clone(otherPart.substring(prefixEnd)));
+    }
+
+    /**
+     * Merge a node with a similar part
+     */
+    mergeExact(node: Node) {
+        this.store ??= node.store;
+        this.wildcardStore ??= node.wildcardStore;
+
+        if (node.inert !== null) {
+            if (this.inert === null) this.inert = node.inert;
+            else {
+                const newStore = node.inert.store;
+                for (const key in newStore) this.setInert(newStore[key]);
+            }
+        }
+
+        if (node.params !== null) {
+            if (this.params === null) this.params = node.params;
+            else this.params.merge(node.params);
+        }
     }
 
     /**
@@ -288,4 +408,108 @@ export class Node {
         // Root does not include a check
         if (isNotRoot) builder.push('}');
     };
+}
+
+export function insertStore(node: Node, path: string, store: any) {
+    // Path should start with '/'
+    if (path.charCodeAt(0) !== 47) path = '/' + path;
+
+    // Ends with '*'
+    const isWildcard = path.charCodeAt(path.length - 1) === 42;
+    if (isWildcard) path = path.slice(0, -1);
+
+    const { inertParts, paramParts } = splitPath(path);
+    let paramPartsIndex = 0;
+
+    for (let i = 0, { length } = inertParts; i < length; ++i) {
+        if (i !== 0) {
+            // Set param on the node
+            const params = node.param(paramParts[paramPartsIndex]);
+            ++paramPartsIndex;
+
+            // Set inert
+            if (params.inert === null) {
+                node = params.inert = new Node(inertParts[i]);
+                continue;
+            }
+
+            node = params.inert;
+        }
+
+        let inertPart = inertParts[i];
+        for (let j = 0; ;) {
+            if (j === inertPart.length) {
+                if (j < node.part.length)
+                    // Move the current node down
+                    node.reset(inertPart, node.clone(node.part.substring(j)));
+
+                break;
+            }
+
+            // Add static child
+            if (j === node.part.length) {
+                if (node.inert === null) node.inert = new InertStore();
+                else {
+                    // Only perform hashing once instead of .has & .get
+                    const inert = node.inert.store[`${inertPart.charCodeAt(j)}`];
+
+                    // Re-run loop with existing static node
+                    if (typeof inert !== 'undefined') {
+                        node = inert;
+                        inertPart = inertPart.substring(j);
+                        j = 0;
+                        continue;
+                    }
+                }
+
+                // Create new node
+                const childNode = new Node(inertPart.substring(j));
+                node.inert.put(childNode);
+                node = childNode;
+
+                break;
+            }
+
+            if (inertPart[j] !== node.part[j]) {
+                // Split the node
+                const newChild = new Node(inertPart.substring(j));
+                const oldNode = node.clone(node.part.substring(j));
+
+                node.reset(node.part.substring(0, j), oldNode);
+                node.inert!.put(newChild);
+
+                node = newChild;
+                break;
+            }
+
+            ++j;
+        }
+    }
+
+    if (paramPartsIndex < paramParts.length) {
+        const paramNode = node.param(paramParts[paramPartsIndex]);
+
+        // The final part is a parameter
+        paramNode.store ??= store;
+
+        return paramNode;
+    }
+
+    // The final part is a wildcard
+    else if (isWildcard) node.wildcardStore ??= store;
+
+    // The final part is static
+    else node.store ??= store;
+
+    return node;
+}
+
+function commonPrefixEnd(part: string, otherPart: string) {
+    const minLen = Math.min(part.length, otherPart.length);
+
+    for (let i = 1; i < minLen; ++i)
+        if (part[i] !== otherPart[i])
+            return i;
+
+    return minLen;
 }

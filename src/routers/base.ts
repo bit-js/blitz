@@ -36,6 +36,30 @@ export default abstract class Router<BasicRouter extends BaseRouter<GenericHandl
      */
     abstract handle(path: string, handler: GenericHandler): void;
 
+
+    /**
+     * Merge with another similar router
+     */
+    route(base: string, { methodRouter: otherMethodRouter, fallbackRouter: otherFallbackRouter }: this) {
+        if (typeof otherMethodRouter !== 'undefined') {
+            const methodRouter = this.methodRouter ??= {};
+
+            for (const method in otherMethodRouter) {
+                const router = methodRouter[method];
+
+                if (typeof router === 'undefined') methodRouter[method] = otherMethodRouter[method];
+                else router.merge(base, otherMethodRouter[method]);
+            }
+        }
+
+        if (typeof otherFallbackRouter !== 'undefined') {
+            const { fallbackRouter } = this;
+
+            if (typeof fallbackRouter === 'undefined') this.fallbackRouter = otherFallbackRouter;
+            else fallbackRouter.merge(base, otherFallbackRouter);
+        }
+    }
+
     /**
      * Build the router
      */
