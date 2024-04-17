@@ -34,6 +34,24 @@ The request context contains:
 ## Other routers
 Other utility routers.
 
+### Edge router
+The basic `Blitz` router only works on non-edge runtimes as those block the use of the `Function` constructor for code generation.
+
+`EdgeRouter` works everywhere as it uses a large regular expression to match the path.
+
+```ts
+import { EdgeRouter } from '@bit-js/blitz';
+
+// Create the router
+const router = new EdgeRouter();
+```
+
+API usage is the same as `Blitz`. 
+For wildcard parameters like `/cats/*`, `Blitz` does count `/cats` as matched while `EdgeRouter` does not.
+
+`EdgeRouter` should be used in edge runtimes as `Blitz` is slightly faster in any other scenarios. 
+`EdgeRouter` can be much slower in runtimes that does not have aggressive optimizations for `RegExp` like Bun.
+
 ### FS router
 A cross-runtime file system router API.
 

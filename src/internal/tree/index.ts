@@ -1,6 +1,6 @@
 import splitPath from './splitPath';
 import { InertStore, Node } from './nodes';
-import type { MatchFunction, Options } from './types';
+import type { Matcher, Options } from './types';
 
 import BuildContext from '../compiler/context';
 
@@ -124,27 +124,113 @@ export class Tree {
             node.param(paramParts[paramPartsIndex]).store ??= store;
 
         // The final part is a wildcard
-        if (isWildcard) node.wildcardStore ??= store;
+        else if (isWildcard) node.wildcardStore ??= store;
 
         // The final part is static
         else node.store ??= store;
     }
 
+    createStaticMatcher(options: Options, fallback: any): Matcher {
+        const { staticMap } = this;
+
+        if (options.invokeResultFunction === true) {
+            // Fallback needs to be callable
+            const fnFallback = typeof fallback === 'function' ? fallback : () => fallback;
+            return staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fnFallback)(ctx);
+        }
+
+        return staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
+    }
+
+    /**
+     * Compile to a RegExp matcher
+     */
+    compileRegex(options: Options, fallback: any): Matcher {
+        const { root } = this;
+        // Do only static match if no dynamic routes exist
+        if (root === null) return this.createStaticMatcher(options, fallback);
+        const { staticMap } = this;
+
+        const store: any[] = [null];
+        const pattern = new RegExp('^' + root.compileRegex(store).substring(2)); // Slice out first '\/'
+
+        // Doing aggresive optimizations
+        if (staticMap === null) {
+            if (options.invokeResultFunction === true) {
+                return fallback.length === 0
+                    ? (ctx) => {
+                        const match = ctx.path.match(pattern);
+                        if (match === null) return fallback();
+
+                        ctx.params = match.groups;
+                        return store[match.indexOf('', 1)](ctx);
+                    }
+                    : (ctx) => {
+                        const match = ctx.path.match(pattern);
+                        if (match === null) return fallback(ctx);
+
+                        ctx.params = match.groups;
+                        return store[match.indexOf('', 1)](ctx);
+                    };
+            }
+
+            return (ctx) => {
+                const match = ctx.path.match(pattern);
+                if (match === null) return fallback;
+
+                ctx.params = match.groups;
+                return store[match.indexOf('', 1)];
+            }
+        }
+
+        // No codegen is allowed here
+        if (options.invokeResultFunction === true) {
+            return fallback.length === 0
+                ? (ctx) => {
+                    const { path } = ctx;
+                    const staticMatch = staticMap[path];
+                    if (typeof staticMatch !== 'undefined') return staticMatch;
+
+                    const match = path.match(pattern);
+                    if (match === null) return fallback();
+
+                    ctx.params = match.groups;
+                    return store[match.indexOf('', 1)](ctx);
+                }
+                : (ctx) => {
+                    const { path } = ctx;
+                    const staticMatch = staticMap[path];
+                    if (typeof staticMatch !== 'undefined') return staticMatch;
+
+                    const match = path.match(pattern);
+                    if (match === null) return fallback(ctx);
+
+                    ctx.params = match.groups;
+                    return store[match.indexOf('', 1)](ctx);
+                };
+        }
+
+        return (ctx) => {
+            const { path } = ctx;
+            const staticMatch = staticMap[path];
+            if (typeof staticMatch !== 'undefined') return staticMatch;
+
+            const match = path.match(pattern);
+            if (match === null) return fallback;
+
+            ctx.params = match.groups;
+            return store[match.indexOf('', 1)];
+        }
+    }
+
     /**
      * Build a function
      */
-    compile(options: Options, fallback: any): MatchFunction<any> {
-        const { staticMap, root } = this;
+    compile(options: Options, fallback: any): Matcher {
+        const { root } = this;
         // Do only static match if no dynamic routes exist
-        if (root === null) {
-            if (options.invokeResultFunction === true) {
-                // Fallback needs to be callable
-                const fnFallback = typeof fallback === 'function' ? fallback : () => fallback;
-                return staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fnFallback)(ctx);
-            }
-
-            return staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
-        }
+        if (root === null) return this.createStaticMatcher(options, fallback);
+        const { staticMap } = this;
 
         // Global build context
         const ctx: BuildContext = new BuildContext(options, ['const{path}=c;']);
@@ -191,4 +277,3 @@ function replaceValue(_: string, value: any) {
 
     return value;
 }
-

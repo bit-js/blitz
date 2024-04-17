@@ -1,7 +1,7 @@
 /**
  * A context object for getting the handler
  */
-export interface Context {
+export class Context {
     /**
      * Parsed pathname (Should not start with '/') 
      */
@@ -31,3 +31,5 @@ export type Route<T> = [path: string, store: T];
 export interface MatchFunction<T> {
     (c: Context): T | null;
 }
+
+export type Matcher = MatchFunction<any>;

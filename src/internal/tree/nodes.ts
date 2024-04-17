@@ -1,5 +1,6 @@
 import type BuildContext from '../compiler/context';
 import plus from '../compiler/plus';
+import mergeRegExpParts from '../regex/mergeRegExpParts';
 
 /**
  * A parametric node
@@ -17,7 +18,6 @@ export class ParamNode {
 
 export class InertStore {
     store: Record<string, Node> = {};
-    map: Map<number, Node> = new Map();
 
     size: number = 0;
     lastChild: Node;
@@ -26,7 +26,6 @@ export class InertStore {
         this.lastChild = item;
 
         this.store[item.key] = item;
-        this.map.set(item.key.charCodeAt(0), item);
 
         ++this.size;
     }
@@ -99,6 +98,52 @@ export class Node {
             );
 
         return this.params;
+    }
+
+    /**
+     * Compile to regex
+     */
+    compileRegex(resultStore: any[]): string {
+        const parts: string[] = [];
+
+        if (this.store !== null) {
+            parts.push('$()');
+            resultStore.push(this.store);
+        }
+
+        if (this.inert !== null) {
+            const { inert: { store } } = this;
+
+            for (const key in store)
+                parts.push(store[key].compileRegex(resultStore));
+        }
+
+        if (this.params !== null) {
+            const { params } = this;
+            const paramParts: string[] = [];
+
+            // Offset the param match
+            resultStore.push(null);
+
+            if (params.store !== null) {
+                paramParts.push('$()');
+                resultStore.push(params.store);
+            };
+
+            if (params.inert !== null)
+                paramParts.push(params.inert.compileRegex(resultStore));
+
+            parts.push(`(?<${params.paramName}>[^/]+)${mergeRegExpParts(paramParts)}`);
+        }
+
+        if (this.wildcardStore !== null) {
+            resultStore.push(null);
+            resultStore.push(this.wildcardStore);
+
+            parts.push('(?<$>.+)$()');
+        }
+
+        return this.part.replace(/\//g, '\\/') + mergeRegExpParts(parts);
     }
 
     /**

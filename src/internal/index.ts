@@ -1,7 +1,9 @@
 import { Tree } from './tree';
 import type { MatchFunction, Options, Route } from './tree/types';
 
-export class Radix<T> {
+type ReturnOf<T> = T extends (...args: any) => infer R ? R : any;
+
+export abstract class BaseRouter<T> {
     /**
      * The data structure to store parametric and wildcard routes
      */
@@ -25,29 +27,39 @@ export class Radix<T> {
     }
 
     /**
-     * Create and register routes
-     */
-    static create<T>(routes: Route<T>[]): Radix<T> {
-        return new this<T>().routes(routes);
-    }
-
-    /**
      * Build a function to match and find the value
      */
+    abstract buildMatcher(options: Options, fallback: T | null): MatchFunction<T>;
+
+    /**
+     * Build a function to match and call the value
+     */
+    abstract buildCaller(options: Options, fallback: T | null): MatchFunction<ReturnOf<T>>
+}
+
+export class Radix<T> extends BaseRouter<T> {
     buildMatcher(options: Options, fallback: T | null): MatchFunction<T> {
         options.invokeResultFunction = false;
         return this.tree.compile(options, fallback);
     }
 
-    /**
-     * Build a function to match and call the value
-     */
     buildCaller(options: Options, fallback: T | null): MatchFunction<ReturnOf<T>> {
         options.invokeResultFunction = true;
         return this.tree.compile(options, fallback) as any;
     }
 }
 
-type ReturnOf<T> = T extends (...args: any) => infer R ? R : any;
+export class Edge<T> extends BaseRouter<T> {
+    buildMatcher(options: Options, fallback: T | null): MatchFunction<T> {
+        options.invokeResultFunction = false;
+        return this.tree.compileRegex(options, fallback);
+    }
+
+    buildCaller(options: Options, fallback: T | null): MatchFunction<ReturnOf<T>> {
+        options.invokeResultFunction = true;
+        return this.tree.compileRegex(options, fallback) as any;
+    }
+}
 
 export { Tree };
+export { Context } from './tree/types'; 

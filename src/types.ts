@@ -1,4 +1,4 @@
-import { type Context as BaseContext } from './radix/tree/types';
+import { type Context as BaseContext } from './internal/tree/types';
 
 /**
  * Infer an URL segment parameter
@@ -57,6 +57,8 @@ export class Context<Params> implements BaseContext, ResponseInit {
         }
     }
 }
+
+export type GenericHandler = (c: Context<any>) => any;
 
 export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
 
