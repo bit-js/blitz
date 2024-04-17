@@ -46,7 +46,9 @@ import { EdgeRouter } from '@bit-js/blitz';
 const router = new EdgeRouter();
 ```
 
-API usage is the same as `Blitz`.
+API usage is the same as `Blitz`. 
+For wildcard parameters like `/cats/*`, `Blitz` does count `/cats` as matched while `EdgeRouter` does not.
+
 `EdgeRouter` should be used in edge runtimes as `Blitz` is slightly faster in any other scenarios. 
 `EdgeRouter` can be much slower in runtimes that does not have aggressive optimizations for `RegExp` like Bun.
 
