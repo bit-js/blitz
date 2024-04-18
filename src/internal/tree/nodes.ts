@@ -359,17 +359,22 @@ export class Node {
             if (params.inert !== null)
                 paramParts.push(params.inert.compileRegex(resultStore));
 
-            parts.push(`(?<${params.paramName}>[^/]+)${mergeRegExpParts(paramParts)}`);
+            parts.push(paramParts.length === 1
+                ? `(?<${params.paramName}>[^/]+)${paramParts[0]}`
+                : `(?<${params.paramName}>[^/]+)(?:${paramParts.join('|')})`);
         }
 
         if (this.wildcardStore !== null) {
+            // Offset the wildcard match
             resultStore.push(null);
             resultStore.push(this.wildcardStore);
 
             parts.push('(?<$>.+)$()');
         }
 
-        return this.part.replace(/\//g, '\\/') + mergeRegExpParts(parts);
+        return parts.length === 1
+            ? this.part.replace(/\//g, '\\/') + parts[0]
+            : `${this.part.replace(/\//g, '\\/')}(?:${parts.join('|')})`;
     }
 
     /**
