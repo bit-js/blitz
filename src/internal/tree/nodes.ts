@@ -533,7 +533,6 @@ function commonPrefixEnd(part: string, otherPart: string) {
 const ignoreKeys = {
     lastChild: null,
     key: null,
-    wildcardStore: null
 }
 
 // Convert special values to a format that can be read by JSON.stringify
