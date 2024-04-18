@@ -42,6 +42,10 @@ export class Tree {
         this.staticMap[path] ??= store;
     }
 
+    getNode(path: string) {
+        return (this.root ??= new Node('/')).insert(path, null);
+    }
+
     /**
      * Merge root node 
      */
@@ -57,7 +61,7 @@ export class Tree {
                 this.root = new Node('/');
         }
 
-        this.root.insert(base, null).mergeWithRoot(root);
+        this.getNode(base).mergeWithRoot(root);
     }
 
     /**
@@ -74,7 +78,17 @@ export class Tree {
             }
         } else {
             const { length } = base;
-            if (this.staticMap === null) this.staticMap = {};
+
+            // Base can be dynamic
+            if (base.includes(':')) {
+                // Put all static routes into a new node and merge
+                const root = new Node('/');
+                for (const key in staticMap)
+                    root.insert(key, staticMap[key]);
+
+                this.getNode(base).mergeWithRoot(root);
+                return;
+            }
 
             // Only one substring op
             const startIdx = base.charCodeAt(0) === 47 ? 1 : 0;
@@ -84,7 +98,7 @@ export class Tree {
                 base = base.substring(startIdx, endIdx);
 
             // Merge 
-            const oldStaticMap = this.staticMap;
+            const oldStaticMap = this.staticMap ??= {};
             for (const key in staticMap)
                 oldStaticMap[key.length === 0 ? base : `${base}/${key}`] ??= staticMap[key];
         }
@@ -217,33 +231,6 @@ export class Tree {
 
         return ctx.build();
     }
-
-    /**
-     * Return the tree in string
-     */
-    debug(space?: number | string): string {
-        return JSON.stringify(this.root, replaceValue, space);
-    }
 }
 
-// Convert special values to a format that can be read by JSON.stringify
-function replaceValue(_: string, value: any) {
-    // Ignore null values
-    if (value === null) return;
 
-    // Convert inert map to object
-    if (value instanceof Map) {
-        const obj = {};
-
-        // Convert char code to normal character
-        for (const pair of value)
-            obj[String.fromCharCode(pair[0])] = pair[1];
-
-        return obj;
-    }
-
-    if (typeof value === 'function')
-        return value.toString();
-
-    return value;
-}

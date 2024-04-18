@@ -24,8 +24,16 @@ for (let i = 0, { length } = testPrefixes; i < length; ++i) {
     }
 
     firstTree.merge(testPrefix, secondTree);
-    const f = firstTree.compile({}, pathsCount);
 
+    const actualTree = new internal.Tree();
+    for (let i = 0; i < pathsCount; ++i)
+        actualTree.store(actualPaths[i], i);
+
+    test(`Real tree: '${testPrefix}'`, () => {
+        expect(firstTree.root!.insert(testPrefix, null).debug()).toEqual(actualTree.root!.insert(testPrefix, null).debug());
+    });
+
+    const f = firstTree.compile({}, pathsCount);
     for (let i = 0; i < pathsCount; ++i)
         test(`Merge prefix '${testPrefix}': ${actualPaths[i]}`, () => {
             expect(f(createContext(actualPaths[i].substring(1)))).toBe(i);

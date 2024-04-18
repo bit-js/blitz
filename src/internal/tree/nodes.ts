@@ -36,6 +36,10 @@ export class ParamNode {
         if (this.inert === null) this.inert = node;
         else this.inert.mergeWithRoot(node);
     }
+
+    debug() {
+        return JSON.parse(JSON.stringify(this, replaceValue));
+    }
 }
 
 export class InertStore {
@@ -510,6 +514,10 @@ export class Node {
         // Root does not include a check
         if (isNotRoot) builder.push('}');
     };
+
+    debug() {
+        return JSON.parse(JSON.stringify(this, replaceValue));
+    }
 }
 
 function commonPrefixEnd(part: string, otherPart: string) {
@@ -520,4 +528,21 @@ function commonPrefixEnd(part: string, otherPart: string) {
             return i;
 
     return minLen;
+}
+
+const ignoreKeys = {
+    lastChild: null,
+    key: null,
+    wildcardStore: null
+}
+
+// Convert special values to a format that can be read by JSON.stringify
+function replaceValue(key: string, value: any) {
+    // Ignore null values
+    if (value === null || key in ignoreKeys) return;
+
+    if (typeof value === 'function')
+        return value.toString();
+
+    return value;
 }
