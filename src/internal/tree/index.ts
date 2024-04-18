@@ -1,4 +1,4 @@
-import { Node, insertStore } from './nodes';
+import { Node } from './nodes';
 import type { Matcher, Options } from './types';
 
 import BuildContext from '../compiler/context';
@@ -20,7 +20,7 @@ export class Tree {
     store(path: string, store: any): any {
         // If path includes parameters or wildcard add to the tree
         if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
-            insertStore(this.root ??= new Node('/'), path, store);
+            (this.root ??= new Node('/')).insert(path, store);
 
         // Static path matches faster with a map
         else this.storeStatic(path, store);
@@ -43,39 +43,61 @@ export class Tree {
     }
 
     /**
+     * Merge root node 
+     */
+    mergeRoot(base: string, root: Node) {
+        if (base.charCodeAt(0) !== 47) base = '/' + base;
+
+        if (this.root === null) {
+            // Two root at the same level
+            if (base.length === 1) {
+                this.root = root;
+                return;
+            } else
+                this.root = new Node('/');
+        }
+
+        this.root.insert(base, null).mergeWithRoot(root);
+    }
+
+    /**
+     * Merge static routes
+     */
+    mergeStatic(base: string, staticMap: Record<string, any>) {
+        // If base path is root
+        if (base.length <= 1) {
+            if (this.staticMap === null) this.staticMap = staticMap;
+            else {
+                const oldStaticMap = this.staticMap;
+                for (const key in staticMap)
+                    oldStaticMap[key] ??= staticMap[key];
+            }
+        } else {
+            const { length } = base;
+            if (this.staticMap === null) this.staticMap = {};
+
+            // Only one substring op
+            const startIdx = base.charCodeAt(0) === 47 ? 1 : 0;
+            const endIdx = base.charCodeAt(length - 1) === 47 ? length - 1 : length;
+
+            if (startIdx !== 0 || endIdx !== length)
+                base = base.substring(startIdx, endIdx);
+
+            // Merge 
+            const oldStaticMap = this.staticMap;
+            for (const key in staticMap)
+                oldStaticMap[key.length === 0 ? base : `${base}/${key}`] ??= staticMap[key];
+        }
+    }
+
+    /**
      * Set a tree as a children
      */
     merge(base: string, tree: Tree) {
         const { staticMap, root } = tree;
 
-        if (root !== null) {
-            if (this.root === null) this.root = root;
-            else {
-                const mergeRoot = insertStore(this.root, base, null);
-                mergeRoot.mergeWithRoot(root);
-            }
-        }
-
-        if (staticMap !== null) {
-            if (base.length === 1) {
-                if (this.staticMap === null) this.staticMap = staticMap;
-                else {
-                    const oldStaticMap = this.staticMap;
-                    for (const key in staticMap)
-                        oldStaticMap[key] ??= staticMap[key];
-                }
-            } else {
-                if (this.staticMap === null) this.staticMap = {};
-
-                if (base.charCodeAt(0) === 47) base = base.substring(1);
-                const lastIdx = base.length - 1;
-                if (base.charCodeAt(lastIdx) === 47) base = base.substring(0, lastIdx);
-
-                const oldStaticMap = this.staticMap;
-                for (const key in staticMap)
-                    oldStaticMap[key.length === 0 ? base : `${base}/${key}`] ??= staticMap[key];
-            }
-        }
+        if (root !== null) this.mergeRoot(base, root);
+        if (staticMap !== null) this.mergeStatic(base, staticMap);
     }
 
     createStaticMatcher(options: Options, fallback: any): Matcher {

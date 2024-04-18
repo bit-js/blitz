@@ -70,7 +70,7 @@ export class Node {
      */
     setPart(part: string) {
         this.part = part;
-        this.key = part.charCodeAt(0).toString();
+        this.key = `${part.charCodeAt(0)}`;
     }
 
     /**
@@ -107,13 +107,112 @@ export class Node {
     }
 
     /**
-     * Add an inert
+     * Store a node as an inert
      */
     setInert(node: Node) {
         const store = (this.inert ??= new InertStore()).store[node.key];
 
         if (typeof store === 'undefined') this.inert.put(node);
         else store.mergeWithInert(node);
+    }
+
+    /**
+     * Insert a handler
+     */
+    insert(path: string, store: any) {
+        let node: Node = this;
+
+        // Path should start with '/'
+        if (path.charCodeAt(0) !== 47) path = '/' + path;
+
+        // Ends with '*'
+        const isWildcard = path.charCodeAt(path.length - 1) === 42;
+        if (isWildcard) path = path.slice(0, -1);
+
+        const { inertParts, paramParts } = splitPath(path);
+        let paramPartsIndex = 0;
+
+        for (let i = 0, { length } = inertParts; i < length; ++i) {
+            if (i !== 0) {
+                // Set param on the node
+                const params = node.param(paramParts[paramPartsIndex]);
+                ++paramPartsIndex;
+
+                // Set inert
+                if (params.inert === null) {
+                    node = params.inert = new Node(inertParts[i]);
+                    continue;
+                }
+
+                node = params.inert;
+            }
+
+            let inertPart = inertParts[i];
+            for (let j = 0; ;) {
+                if (j === inertPart.length) {
+                    if (j < node.part.length)
+                        // Move the current node down
+                        node.reset(inertPart, node.clone(node.part.substring(j)));
+
+                    break;
+                }
+
+                // Add static child
+                if (j === node.part.length) {
+                    if (node.inert === null) node.inert = new InertStore();
+                    else {
+                        // Only perform hashing once instead of .has & .get
+                        const inert = node.inert.store[`${inertPart.charCodeAt(j)}`];
+
+                        // Re-run loop with existing static node
+                        if (typeof inert !== 'undefined') {
+                            node = inert;
+                            inertPart = inertPart.substring(j);
+                            j = 0;
+                            continue;
+                        }
+                    }
+
+                    // Create new node
+                    const childNode = new Node(inertPart.substring(j));
+                    node.inert.put(childNode);
+                    node = childNode;
+
+                    break;
+                }
+
+                if (inertPart[j] !== node.part[j]) {
+                    // Split the node
+                    const newChild = new Node(inertPart.substring(j));
+                    const oldNode = node.clone(node.part.substring(j));
+
+                    node.reset(node.part.substring(0, j), oldNode);
+                    node.inert!.put(newChild);
+
+                    node = newChild;
+                    break;
+                }
+
+                ++j;
+            }
+        }
+
+        if (paramPartsIndex < paramParts.length) {
+            const paramNode = node.param(paramParts[paramPartsIndex]);
+
+            // The final part is a parameter
+            paramNode.store ??= store;
+
+            return paramNode;
+        }
+
+        // The final part is a wildcard
+        else if (isWildcard) node.wildcardStore ??= store;
+
+        // The final part is static
+        else node.store ??= store;
+
+        return node;
     }
 
     /**
@@ -130,14 +229,17 @@ export class Node {
         const { part } = this;
         const { length } = part;
 
-        // Only slash
+        // Both node is a slash
         if (length === 1)
             return this.mergeExact(node);
 
+        // Store does not exist so can append '/' to path
         if ((this.store ??= node.store) === null) {
             if (part.charCodeAt(length - 1) !== 47) this.part += '/';
             this.mergeExact(node);
-        } else {
+        }
+        // Create a new root node and set as inert
+        else {
             const newNode = new Node('/');
             newNode.mergeExact(node);
             this.setInert(newNode);
@@ -165,11 +267,11 @@ export class Node {
             const newNode = node.cloneSelf();
             newNode.setInert(this.clone(currentPart.substring(prefixEnd)));
 
-            this.setPart(node.part);
-            this.store = node.store;
-            this.inert = node.inert;
-            this.params = node.params;
-            this.wildcardStore = node.wildcardStore;
+            this.setPart(newNode.part);
+            this.store = newNode.store;
+            this.inert = newNode.inert;
+            this.params = newNode.params;
+            this.wildcardStore = newNode.wildcardStore;
 
             return;
         }
@@ -184,7 +286,7 @@ export class Node {
     }
 
     /**
-     * Merge a node with a similar part
+     * Merge a node with a similar role
      */
     mergeExact(node: Node) {
         this.store ??= node.store;
@@ -408,100 +510,6 @@ export class Node {
         // Root does not include a check
         if (isNotRoot) builder.push('}');
     };
-}
-
-export function insertStore(node: Node, path: string, store: any) {
-    // Path should start with '/'
-    if (path.charCodeAt(0) !== 47) path = '/' + path;
-
-    // Ends with '*'
-    const isWildcard = path.charCodeAt(path.length - 1) === 42;
-    if (isWildcard) path = path.slice(0, -1);
-
-    const { inertParts, paramParts } = splitPath(path);
-    let paramPartsIndex = 0;
-
-    for (let i = 0, { length } = inertParts; i < length; ++i) {
-        if (i !== 0) {
-            // Set param on the node
-            const params = node.param(paramParts[paramPartsIndex]);
-            ++paramPartsIndex;
-
-            // Set inert
-            if (params.inert === null) {
-                node = params.inert = new Node(inertParts[i]);
-                continue;
-            }
-
-            node = params.inert;
-        }
-
-        let inertPart = inertParts[i];
-        for (let j = 0; ;) {
-            if (j === inertPart.length) {
-                if (j < node.part.length)
-                    // Move the current node down
-                    node.reset(inertPart, node.clone(node.part.substring(j)));
-
-                break;
-            }
-
-            // Add static child
-            if (j === node.part.length) {
-                if (node.inert === null) node.inert = new InertStore();
-                else {
-                    // Only perform hashing once instead of .has & .get
-                    const inert = node.inert.store[`${inertPart.charCodeAt(j)}`];
-
-                    // Re-run loop with existing static node
-                    if (typeof inert !== 'undefined') {
-                        node = inert;
-                        inertPart = inertPart.substring(j);
-                        j = 0;
-                        continue;
-                    }
-                }
-
-                // Create new node
-                const childNode = new Node(inertPart.substring(j));
-                node.inert.put(childNode);
-                node = childNode;
-
-                break;
-            }
-
-            if (inertPart[j] !== node.part[j]) {
-                // Split the node
-                const newChild = new Node(inertPart.substring(j));
-                const oldNode = node.clone(node.part.substring(j));
-
-                node.reset(node.part.substring(0, j), oldNode);
-                node.inert!.put(newChild);
-
-                node = newChild;
-                break;
-            }
-
-            ++j;
-        }
-    }
-
-    if (paramPartsIndex < paramParts.length) {
-        const paramNode = node.param(paramParts[paramPartsIndex]);
-
-        // The final part is a parameter
-        paramNode.store ??= store;
-
-        return paramNode;
-    }
-
-    // The final part is a wildcard
-    else if (isWildcard) node.wildcardStore ??= store;
-
-    // The final part is static
-    else node.store ??= store;
-
-    return node;
 }
 
 function commonPrefixEnd(part: string, otherPart: string) {
