@@ -4,7 +4,7 @@ import paths from './paths';
 import createContext from './createContext';
 
 const pathsCount = paths.length;
-const testPrefixes = ['/', '/base', '/nested/prefix', '/a/random/parameter/here/:param'];
+const testPrefixes = ['/', '/base', '/nested/prefix', '/a/random/parameter/:param', '/a/random/param/:a/followed/by/path'];
 
 for (let i = 0, { length } = testPrefixes; i < length; ++i) {
     const actualPaths = new Array<string>(pathsCount);

@@ -36,7 +36,6 @@ export default abstract class Router<BasicRouter extends BaseRouter<GenericHandl
      */
     abstract handle(path: string, handler: GenericHandler): void;
 
-
     /**
      * Merge with another similar router
      */

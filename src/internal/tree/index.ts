@@ -42,10 +42,6 @@ export class Tree {
         this.staticMap[path] ??= store;
     }
 
-    getNode(path: string) {
-        return (this.root ??= new Node('/')).insert(path, null);
-    }
-
     /**
      * Merge root node 
      */
@@ -61,7 +57,7 @@ export class Tree {
                 this.root = new Node('/');
         }
 
-        this.getNode(base).mergeWithRoot(root);
+        (this.root ??= new Node('/')).insert(base, null).mergeWithRoot(root);
     }
 
     /**
@@ -77,21 +73,19 @@ export class Tree {
                     oldStaticMap[key] ??= staticMap[key];
             }
         } else {
-            const { length } = base;
-
             // Base can be dynamic
             if (base.includes(':')) {
                 // Put all static routes into a new node and merge
-                const root = new Node('/');
+                const root = this.root ??= new Node('/');
                 for (const key in staticMap)
-                    root.insert(key, staticMap[key]);
+                    root.insert(key.length === 0 ? base : `${base}/${key}`, staticMap[key]);
 
-                this.getNode(base).mergeWithRoot(root);
                 return;
             }
 
             // Only one substring op
             const startIdx = base.charCodeAt(0) === 47 ? 1 : 0;
+            const { length } = base;
             const endIdx = base.charCodeAt(length - 1) === 47 ? length - 1 : length;
 
             if (startIdx !== 0 || endIdx !== length)

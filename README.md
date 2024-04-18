@@ -16,6 +16,9 @@ router.put('GET', '/search/*', ctx => new Response(ctx.params.$));
 // Path parameters
 router.put('PUT', '/update/:id', ctx => new Response(ctx.params.id));
 
+// Register another router with the same type as a subrouter
+router.route('/api', anotherRouter);
+
 // Get the fetch function (use with Bun and Deno)
 const fetch = router.build();
 ```
