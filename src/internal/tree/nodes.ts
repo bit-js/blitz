@@ -1,6 +1,5 @@
 import type BuildContext from '../compiler/context';
 import plus from '../compiler/plus';
-import mergeRegExpParts from '../regex/mergeRegExpParts';
 import splitPath from './splitPath';
 
 /**

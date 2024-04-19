@@ -108,6 +108,9 @@ export class Tree {
         if (staticMap !== null) this.mergeStatic(base, staticMap);
     }
 
+    /**
+     * Create static matcher only
+     */
     createStaticMatcher(options: Options, fallback: any): Matcher {
         const { staticMap } = this;
 
