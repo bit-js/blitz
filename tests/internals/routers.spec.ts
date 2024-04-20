@@ -11,6 +11,7 @@ function run(name: string, router: internal.BaseRouter<number>) {
 
     // Compile the tree
     const f = router.buildMatcher({}, pathsCount);
+    console.log(f.toString());
 
     for (let i = 0; i < pathsCount; ++i) {
         const path = paths[i].substring(1);

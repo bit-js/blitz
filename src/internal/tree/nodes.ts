@@ -1,6 +1,7 @@
 import type BuildContext from '../compiler/context';
 import plus from '../compiler/plus';
 import splitPath from './splitPath';
+import type { Context } from './types';
 
 /**
  * A parametric node
@@ -49,9 +50,7 @@ export class InertStore {
 
     put(item: Node) {
         this.lastChild = item;
-
-        this.store[item.key] = item;
-
+        this.store[item.part[0]] = item;
         ++this.size;
     }
 }
@@ -60,27 +59,16 @@ export class InertStore {
  * A static node
  */
 export class Node {
-    part: string;
-    key: string;
-
     store: any = null;
     inert: InertStore | null = null;
     params: ParamNode | null = null;
     wildcardStore: any = null;
 
     /**
-     * Set part and the corresponding inert key for that part before compilation
-     */
-    setPart(part: string) {
-        this.part = part;
-        this.key = `${part.charCodeAt(0)}`;
-    }
-
-    /**
      * Create a node
      */
-    constructor(part: string) {
-        this.setPart(part);
+    constructor(public part: string) {
+
     }
 
     /**
@@ -91,7 +79,7 @@ export class Node {
         inert.put(firstChild);
 
         this.inert = inert;
-        this.setPart(part);
+        this.part = part;
         this.store = this.params = this.wildcardStore = null;
     }
 
@@ -113,7 +101,7 @@ export class Node {
      * Store a node as an inert
      */
     setInert(node: Node) {
-        const store = (this.inert ??= new InertStore()).store[node.key];
+        const store = (this.inert ??= new InertStore()).store[node.part[0]];
 
         if (typeof store === 'undefined') this.inert.put(node);
         else store.mergeWithInert(node);
@@ -165,7 +153,7 @@ export class Node {
                     if (node.inert === null) node.inert = new InertStore();
                     else {
                         // Only perform hashing once instead of .has & .get
-                        const inert = node.inert.store[`${inertPart.charCodeAt(j)}`];
+                        const inert = node.inert.store[inertPart[j]];
 
                         // Re-run loop with existing static node
                         if (typeof inert !== 'undefined') {
@@ -270,7 +258,7 @@ export class Node {
             const newNode = node.cloneSelf();
             newNode.setInert(this.clone(currentPart.substring(prefixEnd)));
 
-            this.setPart(newNode.part);
+            this.part = newNode.part;
             this.store = newNode.store;
             this.inert = newNode.inert;
             this.params = newNode.params;
@@ -412,7 +400,7 @@ export class Node {
             if (this.inert.size === 1) {
                 const { lastChild } = this.inert;
 
-                builder.push(`if(path.charCodeAt(${pathLen})===${lastChild.key}){`);
+                builder.push(`if(path.charCodeAt(${pathLen})===${lastChild.part.charCodeAt(0)}){`);
                 lastChild.compile(
                     ctx, nextPathLen, isChildParam, isNestedChildParam
                 );
@@ -426,7 +414,7 @@ export class Node {
                 builder.push(`switch(path.charCodeAt(${pathLen})){`);
                 for (const key in store) {
                     // Create a case statement for each char code
-                    builder.push(`case ${key}:`);
+                    builder.push(`case ${key.charCodeAt(0)}:`);
                     store[key].compile(
                         ctx, nextPathLen, isChildParam, isNestedChildParam
                     );
@@ -518,6 +506,74 @@ export class Node {
         // Root does not include a check
         if (isNotRoot) builder.push('}');
     };
+
+    matchRoute(ctx: Context, urlLength: number, startIndex: number) {
+        const { part } = this;
+        const { path } = ctx;
+
+        const pathPartLen = part.length;
+        const pathPartEndIndex = startIndex + pathPartLen;
+
+        // Only check the pathPart if its length is > 1 since the parent has
+        // already checked that the url matches the first character
+        if (pathPartLen > 1) {
+            if (pathPartEndIndex > urlLength)
+                return null;
+
+            if (pathPartLen < 15) { // Using a loop is faster for short strings
+                for (let i = 1, j = startIndex + 1; i < pathPartLen; ++i, ++j)
+                    if (part[i] !== path[j])
+                        return null;
+
+                    else if (path.substring(startIndex, pathPartEndIndex) !== part)
+                        return null;
+            }
+        }
+
+        startIndex = pathPartEndIndex;
+
+        // Reached the end of the URL
+        if (startIndex === urlLength) return this.store;
+
+        if (this.inert !== null) {
+            const staticChild = this.inert.store[path[startIndex]];
+
+            if (typeof staticChild !== 'undefined') {
+                const route = staticChild.matchRoute(ctx, urlLength, startIndex);
+                if (route !== null) return route;
+            }
+        }
+
+        if (this.params !== null) {
+            const { params } = this;
+            const slashIndex = path.indexOf('/', startIndex);
+
+            if (slashIndex !== startIndex) { // Params cannot be empty
+                if (slashIndex === -1 || slashIndex >= urlLength) {
+                    if (params.store !== null) {
+                        // This is much faster than using a computed property
+                        const paramsStore = ctx.params ??= {};
+                        paramsStore[params.paramName] = path.substring(startIndex, urlLength);
+                        return params.store;
+                    }
+                } else if (params.inert !== null) {
+                    const route = params.inert.matchRoute(ctx, urlLength, slashIndex);
+
+                    if (route !== null) {
+                        ctx.params[params.paramName] = path.substring(startIndex, slashIndex);
+                        return route;
+                    }
+                }
+            }
+        }
+
+        if (this.wildcardStore !== null) {
+            ctx.params['*'] = path.slice(startIndex, urlLength)
+            return this.wildcardStore;
+        }
+
+        return null;
+    }
 
     debug() {
         return JSON.parse(JSON.stringify(this, replaceValue));
