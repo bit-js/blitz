@@ -7,21 +7,21 @@ import type { Context } from './types';
  * A parametric node
  */
 export class ParamNode {
-    paramName: string;
+    name: string;
     store: any = null;
     inert: Node | null = null;
 
     constructor(name: string) {
         if (name === '$') throw new Error('Parameter name should not be "$" to avoid collision with wildcard parameter');
-        this.paramName = name;
+        this.name = name;
     }
 
     merge(node: ParamNode) {
-        if (this.paramName !== node.paramName)
+        if (this.name !== node.name)
             throw new Error(
-                `Cannot create merge route with parameter "${node.paramName}" \
+                `Cannot create merge route with parameter "${node.name}" \
                 because a route already exists with a different parameter name \
-                ("${this.paramName}") in the same location`
+                ("${this.name}") in the same location`
             );
 
         this.store ??= node.store;
@@ -303,11 +303,11 @@ export class Node {
     param(paramName: string): ParamNode {
         if (this.params === null)
             this.params = new ParamNode(paramName);
-        else if (this.params.paramName !== paramName)
+        else if (this.params.name !== paramName)
             throw new Error(
                 `Cannot create route with parameter "${paramName}" \
                 because a route already exists with a different parameter name \
-                ("${this.params.paramName}") in the same location`
+                ("${this.params.name}") in the same location`
             );
 
         return this.params;
@@ -391,7 +391,7 @@ export class Node {
 
             const hasInert = params.inert !== null,
                 hasStore = params.store !== null,
-                { paramName } = params;
+                { name } = params;
 
             // Declare the current param index variable if inert is found
             if (!isChildParam) builder.push('let ');
@@ -409,8 +409,8 @@ export class Node {
 
                 builder.push('c.params');
                 builder.push(isChildParam
-                    ? `.${paramName}=${value};`
-                    : `={${paramName}:${value}};`);
+                    ? `.${name}=${value};`
+                    : `={${name}:${value}};`);
                 builder.push(ctx.yield(params.store));
 
                 // End the if statement
@@ -426,8 +426,8 @@ export class Node {
                 // Assign param
                 builder.push('c.params');
                 builder.push(isChildParam
-                    ? `.${paramName}=${value};`
-                    : `={${paramName}:${value}};`
+                    ? `.${name}=${value};`
+                    : `={${name}:${value}};`
                 );
 
                 // Handle inert
@@ -511,14 +511,14 @@ export class Node {
                 if (slashIndex === -1) {
                     if (params.store !== null) {
                         // This is much faster than using a computed property
-                        (ctx.params ??= {})[params.paramName] = path.substring(startIndex);
+                        (ctx.params ??= {})[params.name] = path.substring(startIndex);
                         return params.store;
                     }
                 } else if (params.inert !== null) {
                     const route = params.inert.matchRoute(ctx, slashIndex);
 
                     if (route !== null) {
-                        (ctx.params ??= {})[params.paramName] = path.substring(startIndex, slashIndex);
+                        (ctx.params ??= {})[params.name] = path.substring(startIndex, slashIndex);
                         return route;
                     }
                 }
