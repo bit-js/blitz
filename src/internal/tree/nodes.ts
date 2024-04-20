@@ -489,7 +489,7 @@ export class Node {
             if (this.store !== null) return this.store;
 
             if (this.wildcardStore !== null) {
-                (ctx.params ??= { $: null }).$ = path.substring(startIndex);
+                (ctx.params ??= new EmptyWildcardParam()).$ = path.substring(startIndex);
                 return this.wildcardStore;
             }
         };
@@ -526,7 +526,7 @@ export class Node {
         }
 
         if (this.wildcardStore !== null) {
-            (ctx.params ??= { $: null }).$ = path.substring(startIndex);
+            (ctx.params ??= new EmptyWildcardParam()).$ = path.substring(startIndex);
             return this.wildcardStore;
         }
 
@@ -537,6 +537,11 @@ export class Node {
         return JSON.parse(JSON.stringify(this, replaceValue));
     }
 }
+
+// Micro optimization for creating wildcard param store
+class EmptyWildcardParam {
+    $: string;
+};
 
 function commonPrefixEnd(part: string, otherPart: string) {
     const minLen = Math.min(part.length, otherPart.length);
