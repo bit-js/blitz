@@ -3,7 +3,7 @@ import { run, bench, group } from 'mitata';
 import paths from './paths';
 import createContext from './createContext';
 
-const pathsCount = paths.length / 4;
+const pathsCount = paths.length;
 const ctxs = paths.map(createContext);
 
 const routers = {

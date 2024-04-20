@@ -485,8 +485,14 @@ export class Node {
         startIndex = pathPartEndIndex;
 
         // Reached the end of the URL
-        // Doesn't match / for /*
-        if (startIndex === length) return this.store;
+        if (startIndex === length) {
+            if (this.store !== null) return this.store;
+
+            if (this.wildcardStore !== null) {
+                (ctx.params ??= { $: null }).$ = path.substring(startIndex);
+                return this.wildcardStore;
+            }
+        };
 
         if (this.inert !== null) {
             const staticChild = this.inert.store[path[startIndex]];
@@ -520,7 +526,7 @@ export class Node {
         }
 
         if (this.wildcardStore !== null) {
-            (ctx.params ??= {}).$ = path.substring(startIndex);
+            (ctx.params ??= { $: null }).$ = path.substring(startIndex);
             return this.wildcardStore;
         }
 

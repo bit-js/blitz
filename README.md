@@ -50,9 +50,22 @@ const router = new EdgeRouter();
 ```
 
 API usage is the same as `Blitz`. 
-For wildcard parameters like `/cats/*`, `Blitz` does count `/cats` as matched while `EdgeRouter` does not.
-
 `EdgeRouter` should be used in edge runtimes as `Blitz` is around 2x faster in any other scenarios. 
+
+It is possible to re-use the matcher of `EdgeRouter` after adding more routes, unlike `Blitz`.
+```ts
+// Add some routes
+router.put('GET', '/', () => new Response('Hi'));
+
+// Match '/'
+const fetch = router.build();
+
+// Add another route
+router.put('GET', '/user/:id', (ctx) => new Response(ctx.params.id));
+
+// Fetch now handles both '/' and '/user/:id'
+fetch(req);
+```
 
 ### FS router
 A cross-runtime file system router API.
