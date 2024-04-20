@@ -314,57 +314,6 @@ export class Node {
     }
 
     /**
-     * Compile to regex
-     */
-    compileRegex(resultStore: any[]): string {
-        const parts: string[] = [];
-
-        if (this.store !== null) {
-            parts.push('$()');
-            resultStore.push(this.store);
-        }
-
-        if (this.inert !== null) {
-            const { inert: { store } } = this;
-
-            for (const key in store)
-                parts.push(store[key].compileRegex(resultStore));
-        }
-
-        if (this.params !== null) {
-            const { params } = this;
-            const paramParts: string[] = [];
-
-            // Offset the param match
-            resultStore.push(null);
-
-            if (params.store !== null) {
-                paramParts.push('$()');
-                resultStore.push(params.store);
-            };
-
-            if (params.inert !== null)
-                paramParts.push(params.inert.compileRegex(resultStore));
-
-            parts.push(paramParts.length === 1
-                ? `(?<${params.paramName}>[^/]+)${paramParts[0]}`
-                : `(?<${params.paramName}>[^/]+)(?:${paramParts.join('|')})`);
-        }
-
-        if (this.wildcardStore !== null) {
-            // Offset the wildcard match
-            resultStore.push(null);
-            resultStore.push(this.wildcardStore);
-
-            parts.push('(?<$>.+)$()');
-        }
-
-        return parts.length === 1
-            ? this.part.replace(/\//g, '\\/') + parts[0]
-            : `${this.part.replace(/\//g, '\\/')}(?:${parts.join('|')})`;
-    }
-
-    /**
      * Compile a node into string parts to merge later with tree.compile
      */
     compile(
@@ -440,20 +389,20 @@ export class Node {
                 builder.push(`p=${pathLen};`);
             }
 
-            const nextSlashIndex = ctx.searchPath('/', prevIndex),
-                hasInert = params.inert !== null,
+            const hasInert = params.inert !== null,
                 hasStore = params.store !== null,
                 { paramName } = params;
 
             // Declare the current param index variable if inert is found
-            if (hasInert) {
-                if (!isChildParam) builder.push('let ');
-                builder.push(`i=${nextSlashIndex};`);
-            }
+            if (!isChildParam) builder.push('let ');
+            builder.push(`i=${ctx.searchPath('/', prevIndex)};`);
+
+            // Param should not be empty
+            builder.push(`if(i!==${prevIndex}){`);
 
             // Check slash index and get the parameter value if store is found
             if (hasStore) {
-                builder.push(`if(${hasInert ? 'i' : nextSlashIndex}===-1){`);
+                builder.push(`if(i===-1){`);
 
                 // Set param
                 const value = ctx.slicePath(prevIndex);
@@ -490,6 +439,10 @@ export class Node {
 
                 if (!hasStore) builder.push('}');
             }
+
+            // Close the bracket for the first if statement 
+            // That checks if parameter is empty
+            builder.push('}');
         }
 
         if (this.wildcardStore !== null) {
@@ -507,9 +460,11 @@ export class Node {
         if (isNotRoot) builder.push('}');
     };
 
-    matchRoute(ctx: Context, urlLength: number, startIndex: number) {
+    matchRoute(ctx: Context, startIndex: number) {
         const { part } = this;
+
         const { path } = ctx;
+        const { length } = path;
 
         const pathPartLen = part.length;
         const pathPartEndIndex = startIndex + pathPartLen;
@@ -517,29 +472,27 @@ export class Node {
         // Only check the pathPart if its length is > 1 since the parent has
         // already checked that the url matches the first character
         if (pathPartLen > 1) {
-            if (pathPartEndIndex > urlLength)
+            if (pathPartEndIndex > length)
                 return null;
 
-            if (pathPartLen < 15) { // Using a loop is faster for short strings
+            // Using a loop is faster for short strings
+            if (pathPartLen < 15) {
                 for (let i = 1, j = startIndex + 1; i < pathPartLen; ++i, ++j)
-                    if (part[i] !== path[j])
-                        return null;
-
-                    else if (path.substring(startIndex, pathPartEndIndex) !== part)
-                        return null;
-            }
+                    if (part[i] !== path[j]) return null;
+            } else if (path.substring(startIndex, pathPartEndIndex) !== part) return null;
         }
 
         startIndex = pathPartEndIndex;
 
         // Reached the end of the URL
-        if (startIndex === urlLength) return this.store;
+        // Doesn't match / for /*
+        if (startIndex === length) return this.store;
 
         if (this.inert !== null) {
             const staticChild = this.inert.store[path[startIndex]];
 
             if (typeof staticChild !== 'undefined') {
-                const route = staticChild.matchRoute(ctx, urlLength, startIndex);
+                const route = staticChild.matchRoute(ctx, startIndex);
                 if (route !== null) return route;
             }
         }
@@ -549,18 +502,17 @@ export class Node {
             const slashIndex = path.indexOf('/', startIndex);
 
             if (slashIndex !== startIndex) { // Params cannot be empty
-                if (slashIndex === -1 || slashIndex >= urlLength) {
+                if (slashIndex === -1) {
                     if (params.store !== null) {
                         // This is much faster than using a computed property
-                        const paramsStore = ctx.params ??= {};
-                        paramsStore[params.paramName] = path.substring(startIndex, urlLength);
+                        (ctx.params ??= {})[params.paramName] = path.substring(startIndex);
                         return params.store;
                     }
                 } else if (params.inert !== null) {
-                    const route = params.inert.matchRoute(ctx, urlLength, slashIndex);
+                    const route = params.inert.matchRoute(ctx, slashIndex);
 
                     if (route !== null) {
-                        ctx.params[params.paramName] = path.substring(startIndex, slashIndex);
+                        (ctx.params ??= {})[params.paramName] = path.substring(startIndex, slashIndex);
                         return route;
                     }
                 }
@@ -568,7 +520,7 @@ export class Node {
         }
 
         if (this.wildcardStore !== null) {
-            ctx.params['*'] = path.slice(startIndex, urlLength)
+            (ctx.params ??= {}).$ = path.substring(startIndex);
             return this.wildcardStore;
         }
 

@@ -40,7 +40,7 @@ Other utility routers.
 ### Edge router
 The basic `Blitz` router only works on non-edge runtimes as those block the use of the `Function` constructor for code generation.
 
-`EdgeRouter` works everywhere as it uses a large regular expression to match the path.
+`EdgeRouter` works everywhere as it matches routes using a recursive approach.
 
 ```ts
 import { EdgeRouter } from '@bit-js/blitz';
@@ -52,8 +52,7 @@ const router = new EdgeRouter();
 API usage is the same as `Blitz`. 
 For wildcard parameters like `/cats/*`, `Blitz` does count `/cats` as matched while `EdgeRouter` does not.
 
-`EdgeRouter` should be used in edge runtimes as `Blitz` is slightly faster in any other scenarios. 
-`EdgeRouter` can be much slower in runtimes that does not have aggressive optimizations for `RegExp` like Bun.
+`EdgeRouter` should be used in edge runtimes as `Blitz` is way faster in any other scenarios. 
 
 ### FS router
 A cross-runtime file system router API.

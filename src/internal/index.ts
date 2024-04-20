@@ -59,12 +59,12 @@ export class Radix<T> extends BaseRouter<T> {
 export class Edge<T> extends BaseRouter<T> {
     buildMatcher(options: Options, fallback: T | null): MatchFunction<T> {
         options.invokeResultFunction = false;
-        return this.tree.compileRegex(options, fallback);
+        return this.tree.compileMatcher(options, fallback);
     }
 
     buildCaller(options: Options, fallback: T | null): MatchFunction<ReturnOf<T>> {
         options.invokeResultFunction = true;
-        return this.tree.compileRegex(options, fallback) as any;
+        return this.tree.compileMatcher(options, fallback) as any;
     }
 }
 

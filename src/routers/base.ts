@@ -3,7 +3,7 @@ import { Context as BaseContext, type GenericHandler } from '../types';
 import type { BaseRouter } from '../internal';
 import type { Matcher, Options } from '../internal/tree/types';
 
-export default abstract class Router<BasicRouter extends BaseRouter<GenericHandler> = BaseRouter<GenericHandler>> {
+export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseRouter<GenericHandler>> {
     /**
      * Map method routers
      */
@@ -17,7 +17,7 @@ export default abstract class Router<BasicRouter extends BaseRouter<GenericHandl
     /**
      * Fallback handler
      */
-    fallback: GenericHandler = noop;
+    fallback: any = noop;
 
     /**
      * Create a router
@@ -29,12 +29,12 @@ export default abstract class Router<BasicRouter extends BaseRouter<GenericHandl
     /**
      * Register a handler
      */
-    abstract put(method: string, path: string, handler: GenericHandler): void;
+    abstract put(method: string, path: string, handler: any): void;
 
     /**
      * Register a handler for all method
      */
-    abstract handle(path: string, handler: GenericHandler): void;
+    abstract handle(path: string, handler: any): void;
 
     /**
      * Merge with another similar router

@@ -124,87 +124,6 @@ export class Tree {
     }
 
     /**
-     * Compile to a RegExp matcher
-     */
-    compileRegex(options: Options, fallback: any): Matcher {
-        const { root } = this;
-        // Do only static match if no dynamic routes exist
-        if (root === null) return this.createStaticMatcher(options, fallback);
-        const { staticMap } = this;
-
-        const store: any[] = [null];
-        const pattern = new RegExp('^' + root.compileRegex(store).substring(2)); // Slice out first '\/'
-
-        // Doing aggresive optimizations
-        if (staticMap === null) {
-            if (options.invokeResultFunction === true) {
-                return fallback.length === 0
-                    ? (ctx) => {
-                        const match = ctx.path.match(pattern);
-                        if (match === null) return fallback();
-
-                        ctx.params = match.groups;
-                        return store[match.indexOf('', 1)](ctx);
-                    }
-                    : (ctx) => {
-                        const match = ctx.path.match(pattern);
-                        if (match === null) return fallback(ctx);
-
-                        ctx.params = match.groups;
-                        return store[match.indexOf('', 1)](ctx);
-                    };
-            }
-
-            return (ctx) => {
-                const match = ctx.path.match(pattern);
-                if (match === null) return fallback;
-
-                ctx.params = match.groups;
-                return store[match.indexOf('', 1)];
-            }
-        }
-
-        // No codegen is allowed here
-        if (options.invokeResultFunction === true) {
-            return fallback.length === 0
-                ? (ctx) => {
-                    const { path } = ctx;
-                    const staticMatch = staticMap[path];
-                    if (typeof staticMatch !== 'undefined') return staticMatch;
-
-                    const match = path.match(pattern);
-                    if (match === null) return fallback();
-
-                    ctx.params = match.groups;
-                    return store[match.indexOf('', 1)](ctx);
-                }
-                : (ctx) => {
-                    const { path } = ctx;
-                    const staticMatch = staticMap[path];
-                    if (typeof staticMatch !== 'undefined') return staticMatch;
-
-                    const match = path.match(pattern);
-                    if (match === null) return fallback(ctx);
-
-                    ctx.params = match.groups;
-                    return store[match.indexOf('', 1)](ctx);
-                };
-        }
-
-        return (ctx) => {
-            const { path } = ctx;
-            const staticMatch = staticMap[path];
-            if (typeof staticMatch !== 'undefined') return staticMatch;
-
-            const match = path.match(pattern);
-            if (match === null) return fallback;
-
-            ctx.params = match.groups;
-            return store[match.indexOf('', 1)];
-        }
-    }
-
-    /**
      * Build a function
      */
     compile(options: Options, fallback: any): Matcher {
@@ -228,6 +147,25 @@ export class Tree {
 
         return ctx.build();
     }
+
+    /**
+      * Compile to a dynamic matcher
+      */
+    compileMatcher(options: Options, fallback: any): Matcher {
+        const { root } = this;
+        // Do only static match if no dynamic routes exist
+        if (root === null) return this.createStaticMatcher(options, fallback);
+
+        const search = root.matchRoute.bind(root);
+        const { staticMap } = this;
+
+        if (staticMap === null)
+            return options.invokeResultFunction === true
+                ? (ctx) => (search(ctx) ?? fallback)(ctx)
+                : (ctx) => search(ctx) ?? fallback;
+
+        return options.invokeResultFunction === true
+            ? (ctx) => staticMap[ctx.path] ?? (search(ctx, -1) ?? fallback)(ctx)
+            : (ctx) => staticMap[ctx.path] ?? search(ctx, -1) ?? fallback;
+    }
 }
-
-
