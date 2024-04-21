@@ -96,7 +96,7 @@ export default class BuildContext {
         const { length } = part;
 
         // Faster than doing substring
-        if (length < 16) {
+        if (length < 15) {
             const result = new Array<string>(length);
             result[0] = '';
 

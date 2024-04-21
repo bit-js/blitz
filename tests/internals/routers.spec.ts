@@ -1,11 +1,10 @@
 import { internal } from '@bit-js/blitz';
-import paths from './paths';
 import { test, expect } from 'bun:test';
-import createContext from './createContext';
+
+import { paths, pathsCount } from '@utils/paths';
+import createContext from '@utils/createContext';
 
 function run(name: string, router: internal.BaseRouter<number>) {
-    const pathsCount = paths.length;
-
     for (let i = 0; i < pathsCount; ++i)
         router.put(paths[i], i);
 

@@ -1,9 +1,9 @@
 import { internal } from '@bit-js/blitz';
 import { run, bench, group } from 'mitata';
-import paths from './paths';
-import createContext from './createContext';
 
-const pathsCount = paths.length;
+import { paths, pathsCount } from '@utils/paths';
+import createContext from '@utils/createContext';
+
 const ctxs = paths.map(createContext);
 
 const routers = {
@@ -11,14 +11,25 @@ const routers = {
     edge: new internal.Edge()
 };
 
-// Main stuff
+// Register routes
 for (let i = 0; i < pathsCount; ++i)
     for (const name in routers)
         routers[name].put(paths[i], i);
 
+// Build all routers into matchers
 const fns: Record<string, any> = {};
-for (const name in routers)
-    console.log(name, (fns[name] = routers[name].buildMatcher({}, pathsCount)).toString());
+for (const name in routers) {
+    const match = fns[name] = routers[name].buildMatcher({}, pathsCount);
+
+    for (let i = 0; i < pathsCount; ++i) {
+        match(ctxs[i]);
+        match(ctxs[i]);
+        match(ctxs[i]);
+    }
+}
+
+// Load tests
+for (let i = 0; i < 15; ++i) bench('noop', () => { });
 
 for (let i = 0; i < pathsCount; ++i) {
     const ctx = ctxs[i];

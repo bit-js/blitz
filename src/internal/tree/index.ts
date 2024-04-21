@@ -32,14 +32,16 @@ export class Tree {
      * Register a static path
      */
     storeStatic(path: string, store: any): void {
-        // Path should not start or end with '/'
-        if (path.charCodeAt(0) === 47) path = path.substring(1);
+        const { length } = path;
 
-        const lastIdx = path.length - 1;
-        if (path.charCodeAt(lastIdx) === 47) path = path.substring(0, lastIdx);
+        if (length < 2)
+            (this.staticMap ??= {})[''] ??= store;
+        else {
+            const startIdx = path.charCodeAt(0) === 47 ? 1 : 0;
+            const endIdx = path.charCodeAt(length - 1) === 47 ? length - 1 : length;
 
-        this.staticMap ??= {};
-        this.staticMap[path] ??= store;
+            (this.staticMap ??= {})[startIdx === 0 && endIdx === length ? path : path.substring(startIdx, endIdx)] ??= store;
+        }
     }
 
     /**
@@ -65,7 +67,7 @@ export class Tree {
      */
     mergeStatic(base: string, staticMap: Record<string, any>) {
         // If base path is root
-        if (base.length <= 1) {
+        if (base.length < 2) {
             if (this.staticMap === null) this.staticMap = staticMap;
             else {
                 const oldStaticMap = this.staticMap;
@@ -130,20 +132,22 @@ export class Tree {
         const { root } = this;
         // Do only static match if no dynamic routes exist
         if (root === null) return this.createStaticMatcher(options, fallback);
+
         const { staticMap } = this;
 
         // Global build context
-        const ctx: BuildContext = new BuildContext(options, ['const{path}=c;']);
+        const builder = ['const{path}=c;'];
+        const ctx: BuildContext = new BuildContext(options, builder);
 
         // Create static routes check
         if (staticMap !== null)
-            ctx.builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
+            builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
 
         // Create dynamic routes check
         root.compile(ctx, '0', false, false);
 
         // Only need the fallback if root wildcard does not exist
-        if (root.wildcardStore === null) ctx.builder.push(ctx.yield(fallback));
+        if (root.wildcardStore === null) builder.push(ctx.yield(fallback));
 
         return ctx.build();
     }

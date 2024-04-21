@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test';
 import { internal } from '@bit-js/blitz';
-import paths from './paths';
-import createContext from './createContext';
 
-const pathsCount = paths.length;
+import createContext from '@utils/createContext';
+import { paths, pathsCount } from '@utils/paths';
+
 const testPrefixes = ['/', '/base', '/nested/prefix', '/a/random/parameter/:param', '/a/random/param/:a/followed/by/path'];
 
 for (let i = 0, { length } = testPrefixes; i < length; ++i) {
