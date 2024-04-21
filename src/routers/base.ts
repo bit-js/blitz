@@ -1,7 +1,7 @@
 import { Context as BaseContext, type GenericHandler } from '../types';
 
 import type { BaseRouter } from '../internal';
-import type { Matcher, Options } from '../internal/tree/types';
+import type { Context, Matcher, Options } from '../internal/tree/types';
 
 export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseRouter<GenericHandler>> {
     /**
@@ -62,7 +62,7 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
     /**
      * Build the router
      */
-    build(Construct: typeof BaseContext = BaseContext): (req: Request) => any {
+    build(Construct: new (req: Request) => Context = BaseContext): (req: Request) => any {
         const { methodRouter, fallbackRouter } = this;
         const fallback = typeof fallbackRouter === 'undefined'
             ? this.fallback

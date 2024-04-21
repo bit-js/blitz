@@ -165,8 +165,8 @@ export class Tree {
 
         if (staticMap === null)
             return options.invokeResultFunction === true
-                ? (ctx) => (search(ctx) ?? fallback)(ctx)
-                : (ctx) => search(ctx) ?? fallback;
+                ? (ctx) => (search(ctx, -1) ?? fallback)(ctx)
+                : (ctx) => search(ctx, -1) ?? fallback;
 
         return options.invokeResultFunction === true
             ? (ctx) => (staticMap[ctx.path] ?? search(ctx, -1) ?? fallback)(ctx)
