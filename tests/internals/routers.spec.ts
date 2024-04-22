@@ -12,13 +12,10 @@ function run(name: string, router: internal.BaseRouter<number>) {
     const f = router.buildMatcher({}, pathsCount);
     console.log(f.toString());
 
-    for (let i = 0; i < pathsCount; ++i) {
-        const path = paths[i].substring(1);
-
-        test(`${name}: "/${path}"`, () => {
-            expect(f(createContext(path))).toBe(i);
+    for (let i = 0; i < pathsCount; ++i)
+        test(`${name}: "${paths[i]}"`, () => {
+            expect(f(createContext(paths[i]))).toBe(i);
         });
-    }
 }
 
 run('Radix', new internal.Radix());

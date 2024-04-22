@@ -67,16 +67,27 @@ export class Node {
     /**
      * Create a node
      */
-    constructor(public part: string) {
-
-    }
+    constructor(public part: string) { }
 
     /**
-     * Reset a node. Use this to move down a node then add children
+     * Reset a node and add 1 child. Use this to move down a node
      */
     reset(part: string, firstChild: Node): void {
         const inert = new InertStore();
         inert.put(firstChild);
+
+        this.inert = inert;
+        this.part = part;
+        this.store = this.params = this.wildcardStore = null;
+    }
+
+    /**
+     * Reset a node and add 2 children. Use this to move down a node
+     */
+    split(part: string, firstChild: Node, secondChild: Node): void {
+        const inert = new InertStore();
+        inert.put(firstChild);
+        inert.put(secondChild);
 
         this.inert = inert;
         this.part = part;
@@ -113,14 +124,11 @@ export class Node {
     insert(path: string, store: any) {
         let node: Node = this;
 
-        // Path should start with '/'
-        if (path.charCodeAt(0) !== 47) path = '/' + path;
-
         // Ends with '*'
-        const isWildcard = path.charCodeAt(path.length - 1) === 42;
-        if (isWildcard) path = path.slice(0, -1);
+        const lastIdx = path.length - 1;
+        const isWildcard = path.charCodeAt(lastIdx) === 42;
 
-        const { inertParts, paramParts } = splitPath(path);
+        const { inertParts, paramParts } = splitPath(isWildcard ? path.substring(0, lastIdx) : path);
         let paramPartsIndex = 0;
 
         for (let i = 0, { length } = inertParts; i < length; ++i) {
@@ -175,10 +183,11 @@ export class Node {
                 if (inertPart[j] !== node.part[j]) {
                     // Split the node
                     const newChild = new Node(inertPart.substring(j));
-                    const oldNode = node.clone(node.part.substring(j));
 
-                    node.reset(node.part.substring(0, j), oldNode);
-                    node.inert!.put(newChild);
+                    node.split(
+                        node.part.substring(0, j),
+                        node.clone(node.part.substring(j)), newChild
+                    );
 
                     node = newChild;
                     break;
@@ -268,12 +277,11 @@ export class Node {
         }
 
         // abc - abd
-        this.reset(
+        this.split(
             prefixEnd === 0 ? '/' : currentPart.substring(0, prefixEnd),
-            this.clone(currentPart.substring(prefixEnd))
+            this.clone(currentPart.substring(prefixEnd)),
+            node.clone(otherPart.substring(prefixEnd))
         );
-
-        this.inert!.put(node.clone(otherPart.substring(prefixEnd)));
     }
 
     /**
@@ -338,9 +346,10 @@ export class Node {
             builder.push('{');
         }
 
-        if (this.store !== null)
+        const hasStore = this.store !== null;
+        if (hasStore)
             // Check whether the current length is equal to current path length
-            builder.push(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
+            builder.push(`if(length===${pathLen})${ctx.yield(this.store)};`);
 
         if (this.inert !== null) {
             const nextPathLen = plus(pathLen, 1);
@@ -389,8 +398,8 @@ export class Node {
                 builder.push(`p=${pathLen};`);
             }
 
-            const hasInert = params.inert !== null,
-                hasStore = params.store !== null,
+            const paramHasInert = params.inert !== null,
+                paramHasStore = params.store !== null,
                 { name } = params;
 
             // Declare the current param index variable if inert is found
@@ -401,7 +410,7 @@ export class Node {
             builder.push(`if(i!==${prevIndex}){`);
 
             // Check slash index and get the parameter value if store is found
-            if (hasStore) {
+            if (paramHasStore) {
                 builder.push(`if(i===-1){`);
 
                 // Set param
@@ -417,11 +426,11 @@ export class Node {
                 builder.push('}');
             }
 
-            if (hasInert) {
+            if (paramHasInert) {
                 const value = ctx.substringPath(prevIndex, 'i');
 
                 // Additional check if no store is provided (if store exists the previous part should match and return the store)
-                if (!hasStore) builder.push(`if(i!==-1){`);
+                if (!paramHasStore) builder.push(`if(i!==-1){`);
 
                 // Assign param
                 builder.push('c.params');
@@ -437,7 +446,7 @@ export class Node {
                     isChildParam
                 );
 
-                if (!hasStore) builder.push('}');
+                if (!paramHasStore) builder.push('}');
             }
 
             // Close the bracket for the first if statement 
@@ -446,14 +455,19 @@ export class Node {
         }
 
         if (this.wildcardStore !== null) {
+            // Check if current path length is larger than the wildcard path
+            if (!hasStore) builder.push(`if(length!==${pathLen}){`)
+
             const value = ctx.slicePath(pathLen);
 
             // Assign wildcard parameter
             builder.push('c.params');
             builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
             builder.push(ctx.yield(this.wildcardStore));
-
             builder.push(';');
+
+            // Close the if statement
+            if (!hasStore) builder.push('}');
         }
 
         // Root does not include a check
@@ -463,7 +477,7 @@ export class Node {
     matchRoute(ctx: Context, startIndex: number) {
         const { part } = this;
 
-        const { path } = ctx;
+        const { path, params } = ctx;
         const { length } = path;
 
         const pathPartLen = part.length;
@@ -484,15 +498,8 @@ export class Node {
 
         startIndex = pathPartEndIndex;
 
-        // Reached the end of the URL
-        if (startIndex === length) {
-            if (this.store !== null) return this.store;
-
-            if (this.wildcardStore !== null) {
-                (ctx.params ??= new EmptyWildcardParam()).$ = path.substring(startIndex);
-                return this.wildcardStore;
-            }
-        };
+        // Reached the end of the URL (Does not match wildcard)
+        if (startIndex === length) return this.store;
 
         if (this.inert !== null) {
             const staticChild = this.inert.store[path[startIndex]];
@@ -511,14 +518,14 @@ export class Node {
                 if (slashIndex === -1) {
                     if (params.store !== null) {
                         // This is much faster than using a computed property
-                        (ctx.params ??= {})[params.name] = path.substring(startIndex);
+                        params[params.name] = path.substring(startIndex);
                         return params.store;
                     }
                 } else if (params.inert !== null) {
                     const route = params.inert.matchRoute(ctx, slashIndex);
 
                     if (route !== null) {
-                        (ctx.params ??= {})[params.name] = path.substring(startIndex, slashIndex);
+                        params[params.name] = path.substring(startIndex, slashIndex);
                         return route;
                     }
                 }
@@ -526,7 +533,7 @@ export class Node {
         }
 
         if (this.wildcardStore !== null) {
-            (ctx.params ??= new EmptyWildcardParam()).$ = path.substring(startIndex);
+            params.$ = path.substring(startIndex);
             return this.wildcardStore;
         }
 
@@ -537,11 +544,6 @@ export class Node {
         return JSON.parse(JSON.stringify(this, replaceValue));
     }
 }
-
-// Micro optimization for creating wildcard param store
-class EmptyWildcardParam {
-    $: string;
-};
 
 function commonPrefixEnd(part: string, otherPart: string) {
     const minLen = Math.min(part.length, otherPart.length);

@@ -20,7 +20,7 @@ for (let i = 0, { length } = testPrefixes; i < length; ++i) {
         secondTree.store(paths[j], j);
 
         actualPaths[i] = paths[i];
-        actualPaths[j] = (paths[j].length === 1 ? testPrefix : testPrefix + paths[j]).replace(/\/\//, '/');
+        actualPaths[j] = paths[j].length === 1 ? testPrefix : (testPrefix.length === 1 ? paths[j] : testPrefix + paths[j]);
     }
 
     firstTree.merge(testPrefix, secondTree);
@@ -36,6 +36,6 @@ for (let i = 0, { length } = testPrefixes; i < length; ++i) {
     const f = firstTree.compile({}, pathsCount);
     for (let i = 0; i < pathsCount; ++i)
         test(`Merge prefix '${testPrefix}': ${actualPaths[i]}`, () => {
-            expect(f(createContext(actualPaths[i].substring(1)))).toBe(i);
+            expect(f(createContext(actualPaths[i]))).toBe(i);
         });
 }

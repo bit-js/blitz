@@ -43,8 +43,8 @@ export class Context<Params> implements BaseContext, ResponseInit {
      * Parse the request
      */
     constructor(readonly req: Request) {
-        const start = req.url.indexOf('/', 12) + 1,
-            end = req.url.indexOf('?', start);
+        const start = req.url.indexOf('/', 12),
+            end = req.url.indexOf('?', start + 1);
 
         this.pathStart = start;
 

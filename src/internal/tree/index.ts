@@ -18,38 +18,27 @@ export class Tree {
      * Register a path
      */
     store(path: string, store: any): any {
+        // Do path validation to avoid malformed paths
+        if (path.charCodeAt(0) !== 47) throw new Error('Path should start with a slash');
+
+        const { length } = path;
+        const lastCharCode = path.charCodeAt(length - 1);
+        if (length !== 1 && lastCharCode === 47) throw new Error('Path should not end with a slash');
+
         // If path includes parameters or wildcard add to the tree
-        if (path.includes(':') || path.charCodeAt(path.length - 1) === 42)
-            (this.root ??= new Node('/')).insert(path, store);
+        if (path.includes(':') || lastCharCode === 42) (this.root ??= new Node('/')).insert(path, store);
 
         // Static path matches faster with a map
-        else this.storeStatic(path, store);
+        else (this.staticMap ??= {})[path] ??= store;
 
         return store;
     }
 
     /**
-     * Register a static path
-     */
-    storeStatic(path: string, store: any): void {
-        const { length } = path;
-
-        if (length < 2)
-            (this.staticMap ??= {})[''] ??= store;
-        else {
-            const startIdx = path.charCodeAt(0) === 47 ? 1 : 0;
-            const endIdx = path.charCodeAt(length - 1) === 47 ? length - 1 : length;
-
-            (this.staticMap ??= {})[startIdx === 0 && endIdx === length ? path : path.substring(startIdx, endIdx)] ??= store;
-        }
-    }
-
-    /**
-     * Merge root node 
+     * Merge root node
+     * @internal
      */
     mergeRoot(base: string, root: Node) {
-        if (base.charCodeAt(0) !== 47) base = '/' + base;
-
         if (this.root === null) {
             // Two root at the same level
             if (base.length === 1) {
@@ -64,6 +53,7 @@ export class Tree {
 
     /**
      * Merge static routes
+     * @internal
      */
     mergeStatic(base: string, staticMap: Record<string, any>) {
         // If base path is root
@@ -80,23 +70,15 @@ export class Tree {
                 // Put all static routes into a new node and merge
                 const root = this.root ??= new Node('/');
                 for (const key in staticMap)
-                    root.insert(key.length === 0 ? base : `${base}/${key}`, staticMap[key]);
+                    root.insert(key.length === 1 ? base : `${base}${key}`, staticMap[key]);
 
                 return;
             }
 
-            // Only one substring op
-            const startIdx = base.charCodeAt(0) === 47 ? 1 : 0;
-            const { length } = base;
-            const endIdx = base.charCodeAt(length - 1) === 47 ? length - 1 : length;
-
-            if (startIdx !== 0 || endIdx !== length)
-                base = base.substring(startIdx, endIdx);
-
             // Merge 
             const oldStaticMap = this.staticMap ??= {};
             for (const key in staticMap)
-                oldStaticMap[key.length === 0 ? base : `${base}/${key}`] ??= staticMap[key];
+                oldStaticMap[key.length === 1 ? base : `${base}${key}`] ??= staticMap[key];
         }
     }
 
@@ -104,8 +86,13 @@ export class Tree {
      * Set a tree as a children
      */
     merge(base: string, tree: Tree) {
-        const { staticMap, root } = tree;
+        if (base.charCodeAt(0) !== 47) throw new Error('Path should start with a slash');
 
+        const { length } = base;
+        if (length !== 1 && base.charCodeAt(length - 1) === 47) throw new Error('Path should not end with a slash');
+
+        // Split to two step
+        const { staticMap, root } = tree;
         if (root !== null) this.mergeRoot(base, root);
         if (staticMap !== null) this.mergeStatic(base, staticMap);
     }
@@ -136,7 +123,7 @@ export class Tree {
         const { staticMap } = this;
 
         // Global build context
-        const builder = ['const{path}=c;'];
+        const builder = ['const{path}=c,{length}=path;'];
         const ctx: BuildContext = new BuildContext(options, builder);
 
         // Create static routes check
@@ -144,7 +131,7 @@ export class Tree {
             builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
 
         // Create dynamic routes check
-        root.compile(ctx, '0', false, false);
+        root.compile(ctx, '1', false, false);
 
         // Only need the fallback if root wildcard does not exist
         if (root.wildcardStore === null) builder.push(ctx.yield(fallback));
@@ -160,16 +147,37 @@ export class Tree {
         // Do only static match if no dynamic routes exist
         if (root === null) return this.createStaticMatcher(options, fallback);
 
-        const search = root.matchRoute.bind(root);
         const { staticMap } = this;
 
         if (staticMap === null)
             return options.invokeResultFunction === true
-                ? (ctx) => (search(ctx, -1) ?? fallback)(ctx)
-                : (ctx) => search(ctx, -1) ?? fallback;
+                ? (ctx) => {
+                    ctx.params = new EmptyWildcardParam();
+                    return (root.matchRoute(ctx, 0) ?? fallback)(ctx);
+                }
+                : (ctx) => {
+                    ctx.params = new EmptyWildcardParam();
+                    return root.matchRoute(ctx, 0) ?? fallback;
+                }
 
         return options.invokeResultFunction === true
-            ? (ctx) => (staticMap[ctx.path] ?? search(ctx, -1) ?? fallback)(ctx)
-            : (ctx) => staticMap[ctx.path] ?? search(ctx, -1) ?? fallback;
+            ? (ctx) => {
+                const staticMatch = staticMap[ctx.path];
+                if (typeof staticMatch !== 'undefined') return staticMatch;
+
+                ctx.params = new EmptyWildcardParam();
+                return (root.matchRoute(ctx, 0) ?? fallback)(ctx)
+            } : (ctx) => {
+                const staticMatch = staticMap[ctx.path];
+                if (typeof staticMatch !== 'undefined') return staticMatch;
+
+                ctx.params = new EmptyWildcardParam();
+                return root.matchRoute(ctx, 0) ?? fallback;
+            }
     }
 }
+
+// Micro optimization for creating wildcard param store
+class EmptyWildcardParam {
+    $: string;
+};

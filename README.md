@@ -10,7 +10,7 @@ const router = new Blitz();
 // Register paths
 router.put('GET', '/', () => new Response('Hi'));
 
-// Wildcard parameter (does not start with a slash)
+// Wildcard parameter
 router.put('GET', '/search/*', ctx => new Response(ctx.params.$));
 
 // Path parameters
@@ -23,9 +23,12 @@ router.route('/api', anotherRouter);
 const fetch = router.build();
 ```
 
+## Patterns
+Blitz supports URL params and wildcards. Wildcard like `/*` does not match `/`.
+
 ## Context
 The request context contains:
-- `path`: The request pathname (Does not start with a slash).
+- `path`: The request pathname (Always start with a slash).
 - `pathStart`: The request pathname start index in the request URL.
 - `pathEnd`: The request pathname end index in the request URL.
 - `params`: Request URL parameters.

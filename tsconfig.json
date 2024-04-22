@@ -11,7 +11,8 @@
         "moduleResolution": "bundler",
         "declaration": true,
         "emitDeclarationOnly": true,
-        "verbatimModuleSyntax": true
+        "verbatimModuleSyntax": true,
+        "stripInternal": true
     },
     "include": [
         "src"
