@@ -1,7 +1,6 @@
 import type BuildContext from '../compiler/context';
 import plus from '../compiler/plus';
 import splitPath from './splitPath';
-import type { Context } from './types';
 
 /**
  * A parametric node
@@ -501,10 +500,8 @@ export class Node {
      * Match a route
      * @internal
      */
-    matchRoute(ctx: Context, startIndex: number) {
+    matchRoute(path: string, params: any, startIndex: number) {
         const { part } = this;
-
-        const { path, params } = ctx;
         const { length } = path;
 
         const pathPartLen = part.length;
@@ -532,7 +529,7 @@ export class Node {
             const staticChild = this.inert.store[path[startIndex]];
 
             if (typeof staticChild !== 'undefined') {
-                const route = staticChild.matchRoute(ctx, startIndex);
+                const route = staticChild.matchRoute(path, params, startIndex);
                 if (route !== null) return route;
             }
         }
@@ -549,7 +546,7 @@ export class Node {
                         return params.store;
                     }
                 } else if (params.inert !== null) {
-                    const route = params.inert.matchRoute(ctx, slashIndex);
+                    const route = params.inert.matchRoute(path, params, slashIndex);
 
                     if (route !== null) {
                         params[params.name] = path.substring(startIndex, slashIndex);

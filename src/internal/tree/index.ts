@@ -150,28 +150,16 @@ export class Tree {
         const { staticMap } = this;
         if (staticMap === null)
             return options.invokeResultFunction === true
-                ? (ctx) => {
-                    ctx.params = new EmptyWildcardParam();
-                    return (root.matchRoute(ctx, 0) ?? fallback)(ctx);
-                }
-                : (ctx) => {
-                    ctx.params = new EmptyWildcardParam();
-                    return root.matchRoute(ctx, 0) ?? fallback;
-                }
+                ? (ctx) => (root.matchRoute(ctx.path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback)(ctx)
+                : (ctx) => root.matchRoute(ctx.path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback;
 
         return options.invokeResultFunction === true
             ? (ctx) => {
-                const staticMatch = staticMap[ctx.path];
-                if (typeof staticMatch !== 'undefined') return staticMatch;
-
-                ctx.params = new EmptyWildcardParam();
-                return (root.matchRoute(ctx, 0) ?? fallback)(ctx)
+                const { path } = ctx;
+                return staticMap[path] ?? (root.matchRoute(path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback)(ctx);
             } : (ctx) => {
-                const staticMatch = staticMap[ctx.path];
-                if (typeof staticMatch !== 'undefined') return staticMatch;
-
-                ctx.params = new EmptyWildcardParam();
-                return root.matchRoute(ctx, 0) ?? fallback;
+                const { path } = ctx;
+                return staticMap[path] ?? root.matchRoute(path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback;
             }
     }
 }
