@@ -103,11 +103,8 @@ export class Tree {
     createStaticMatcher(options: Options, fallback: any): Matcher {
         const { staticMap } = this;
 
-        if (options.invokeResultFunction === true) {
-            // Fallback needs to be callable
-            const fnFallback = typeof fallback === 'function' ? fallback : () => fallback;
-            return staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fnFallback)(ctx);
-        }
+        if (options.invokeResultFunction === true)
+            return staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fallback)(ctx);
 
         return staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
     }
@@ -123,12 +120,15 @@ export class Tree {
         const { staticMap } = this;
 
         // Global build context
-        const builder = ['const{path}=c,{length}=path;'];
+        const builder = ['const {path}=c;'];
         const ctx: BuildContext = new BuildContext(options, builder);
 
         // Create static routes check
         if (staticMap !== null)
             builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
+
+        // Detect path length
+        builder.push('const {length}=path,params=c.params={};');
 
         // Create dynamic routes check
         root.compile(ctx, '1', false, false);
@@ -150,21 +150,16 @@ export class Tree {
         const { staticMap } = this;
         if (staticMap === null)
             return options.invokeResultFunction === true
-                ? (ctx) => (root.matchRoute(ctx.path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback)(ctx)
-                : (ctx) => root.matchRoute(ctx.path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback;
+                ? (ctx) => (root.matchRoute(ctx.path, ctx.params = {}, 0) ?? fallback)(ctx)
+                : (ctx) => root.matchRoute(ctx.path, ctx.params = {}, 0) ?? fallback;
 
         return options.invokeResultFunction === true
             ? (ctx) => {
                 const { path } = ctx;
-                return staticMap[path] ?? (root.matchRoute(path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback)(ctx);
+                return staticMap[path] ?? (root.matchRoute(path, ctx.params = {}, 0) ?? fallback)(ctx);
             } : (ctx) => {
                 const { path } = ctx;
-                return staticMap[path] ?? root.matchRoute(path, ctx.params = new EmptyWildcardParam(), 0) ?? fallback;
+                return staticMap[path] ?? root.matchRoute(path, ctx.params = {}, 0) ?? fallback;
             }
     }
 }
-
-// Micro optimization for creating wildcard param store
-class EmptyWildcardParam {
-    $: string;
-};

@@ -438,10 +438,7 @@ export class Node {
                 // Set param
                 const value = ctx.slicePath(prevIndex);
 
-                builder.push('c.params');
-                builder.push(isChildParam
-                    ? `.${name}=${value};`
-                    : `={${name}:${value}};`);
+                builder.push(`params.${name}=${value};`);
                 builder.push(ctx.yield(params.store));
 
                 // End the if statement
@@ -455,11 +452,7 @@ export class Node {
                 if (!paramHasStore) builder.push(`if(i!==-1){`);
 
                 // Assign param
-                builder.push('c.params');
-                builder.push(isChildParam
-                    ? `.${name}=${value};`
-                    : `={${name}:${value}};`
-                );
+                builder.push(`params.${name}=${value};`);
 
                 // Handle inert
                 params.inert!.compile(
@@ -483,8 +476,7 @@ export class Node {
             const value = ctx.slicePath(pathLen);
 
             // Assign wildcard parameter
-            builder.push('c.params');
-            builder.push(isChildParam ? `.$=${value};` : `={$:${value}};`)
+            builder.push(`params.$=${value};`)
             builder.push(ctx.yield(this.wildcardStore));
             builder.push(';');
 
@@ -500,7 +492,7 @@ export class Node {
      * Match a route
      * @internal
      */
-    matchRoute(path: string, params: any, startIndex: number) {
+    matchRoute(path: string, param: Record<string, string>, startIndex: number) {
         const { part } = this;
         const { length } = path;
 
@@ -529,7 +521,7 @@ export class Node {
             const staticChild = this.inert.store[path[startIndex]];
 
             if (typeof staticChild !== 'undefined') {
-                const route = staticChild.matchRoute(path, params, startIndex);
+                const route = staticChild.matchRoute(path, param, startIndex);
                 if (route !== null) return route;
             }
         }
@@ -542,14 +534,14 @@ export class Node {
                 if (slashIndex === -1) {
                     if (params.store !== null) {
                         // This is much faster than using a computed property
-                        params[params.name] = path.substring(startIndex);
+                        param[params.name] = path.substring(startIndex);
                         return params.store;
                     }
                 } else if (params.inert !== null) {
-                    const route = params.inert.matchRoute(path, params, slashIndex);
+                    const route = params.inert.matchRoute(path, param, slashIndex);
 
                     if (route !== null) {
-                        params[params.name] = path.substring(startIndex, slashIndex);
+                        param[params.name] = path.substring(startIndex, slashIndex);
                         return route;
                     }
                 }
@@ -557,7 +549,7 @@ export class Node {
         }
 
         if (this.wildcardStore !== null) {
-            params.$ = path.substring(startIndex);
+            param.$ = path.substring(startIndex);
             return this.wildcardStore;
         }
 
