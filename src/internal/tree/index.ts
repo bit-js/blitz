@@ -156,7 +156,7 @@ export class Tree {
         return options.invokeResultFunction === true
             ? (ctx) => {
                 const { path } = ctx;
-                return staticMap[path] ?? (root.matchRoute(path, ctx.params = {}, 0) ?? fallback)(ctx);
+                return (staticMap[path] ?? root.matchRoute(path, ctx.params = {}, 0) ?? fallback)(ctx);
             } : (ctx) => {
                 const { path } = ctx;
                 return staticMap[path] ?? root.matchRoute(path, ctx.params = {}, 0) ?? fallback;
