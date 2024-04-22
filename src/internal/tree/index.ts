@@ -148,7 +148,6 @@ export class Tree {
         if (root === null) return this.createStaticMatcher(options, fallback);
 
         const { staticMap } = this;
-
         if (staticMap === null)
             return options.invokeResultFunction === true
                 ? (ctx) => {

@@ -4,6 +4,7 @@ import plus from './plus';
 
 /**
  * The object for passing between recursive calls
+ * @internal
  */
 export default class BuildContext {
     /**

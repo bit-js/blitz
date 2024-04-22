@@ -1,3 +1,6 @@
+/**
+ * @internal
+ */
 export default function plus(num: string, val: number): string {
     if (val === 0) return num;
 

@@ -16,6 +16,10 @@ export class ParamNode {
         this.name = name;
     }
 
+    /**
+     * Merge with another parametric node
+     * @internal
+     */
     merge(node: ParamNode) {
         if (this.name !== node.name)
             throw new Error(
@@ -32,6 +36,10 @@ export class ParamNode {
         }
     }
 
+    /**
+     * Merge the inert with a root node
+     * @internal
+     */
     mergeWithRoot(node: Node) {
         if (this.inert === null) this.inert = node;
         else this.inert.mergeWithRoot(node);
@@ -48,6 +56,10 @@ export class InertStore {
     size: number = 0;
     lastChild: Node;
 
+    /**
+     * Put an item with a new key
+     * @internal
+     */
     put(item: Node) {
         this.lastChild = item;
         this.store[item.part[0]] = item;
@@ -71,6 +83,7 @@ export class Node {
 
     /**
      * Reset a node and add 1 child. Use this to move down a node
+     * @internal
      */
     reset(part: string, firstChild: Node): void {
         const inert = new InertStore();
@@ -83,6 +96,7 @@ export class Node {
 
     /**
      * Reset a node and add 2 children. Use this to move down a node
+     * @internal
      */
     split(part: string, firstChild: Node, secondChild: Node): void {
         const inert = new InertStore();
@@ -96,6 +110,7 @@ export class Node {
 
     /**
      * Clone the current node with new part
+     * @internal
      */
     clone(part: string): Node {
         const node: Node = new Node(part);
@@ -110,6 +125,7 @@ export class Node {
 
     /**
      * Store a node as an inert
+     * @internal
      */
     setInert(node: Node) {
         const store = (this.inert ??= new InertStore()).store[node.part[0]];
@@ -120,6 +136,7 @@ export class Node {
 
     /**
      * Insert a handler
+     * @internal
      */
     insert(path: string, store: any) {
         let node: Node = this;
@@ -217,6 +234,7 @@ export class Node {
 
     /**
      * Clone this
+     * @internal
      */
     cloneSelf() {
         return this.clone(this.part);
@@ -224,6 +242,7 @@ export class Node {
 
     /**
      * Merge a node with a root node
+     * @internal
      */
     mergeWithRoot(node: Node) {
         const { part } = this;
@@ -248,6 +267,7 @@ export class Node {
 
     /**
      * Merge a node with an inert node (same first character)
+     * @internal
      */
     mergeWithInert(node: Node) {
         const currentPart = this.part;
@@ -286,6 +306,7 @@ export class Node {
 
     /**
      * Merge a node with a similar role
+     * @internal
      */
     mergeExact(node: Node) {
         this.store ??= node.store;
@@ -307,6 +328,7 @@ export class Node {
 
     /**
      * Set parametric node
+     * @internal
      */
     param(paramName: string): ParamNode {
         if (this.params === null)
@@ -323,6 +345,7 @@ export class Node {
 
     /**
      * Compile a node into string parts to merge later with tree.compile
+     * @internal
      */
     compile(
         ctx: BuildContext,
@@ -474,6 +497,10 @@ export class Node {
         if (isNotRoot) builder.push('}');
     };
 
+    /**
+     * Match a route
+     * @internal
+     */
     matchRoute(ctx: Context, startIndex: number) {
         const { part } = this;
 
