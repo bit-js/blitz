@@ -70,6 +70,35 @@ router.put('GET', '/user/:id', (ctx) => new Response(ctx.params.id));
 fetch(req);
 ```
 
+### URL routers
+These are internals router built for path matching only.
+```ts
+import { internal } from '@bit-js/blitz';
+
+// Blitz router with only path matching
+const router = new internal.Radix<number>();
+
+// EdgeRouter with only path matching;
+const router = new internal.Edge<number>();
+
+// Register routes
+router.put('/', 0);
+router.put('/:id', 1);
+router.put('/*', 2);
+
+// Merging routes
+router.merge(otherInternalRouter);
+
+// Get the matching function
+const f = router.buildMatcher({}, 3);
+
+f(ctx);
+```
+
+The match context only has:
+`ctx.path`: The parsed pathname.
+`ctx.params`: The output parameters.
+
 ### FS router
 A cross-runtime file system router API.
 
@@ -107,7 +136,7 @@ export default {
 }
 ```
 
-### Route style
+#### Route style
 Route style is a function that accepts a relative path and returns the correct route pattern.
 ```ts
 type Style = (path: string) => string | null;
