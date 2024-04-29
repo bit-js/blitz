@@ -2,7 +2,7 @@ import { Radix } from '../internal';
 import { Context } from '../types';
 
 declare namespace Router {
-    export type Style = (path: string) => string;
+    export type Style = (path: string) => string | null;
     export type DefaultStyle = keyof typeof defaultStyleMap;
     export type GetInfo<T> = (path: string) => T;
 
@@ -137,7 +137,12 @@ class Router<T> {
         const { on, style, scanFiles } = this;
 
         const router = new Radix<T>();
-        for (const path of scanFiles(cwd)) router.put(style(path), on(normalize(cwd + path)));
+        for (const path of scanFiles(cwd)) {
+            const route = style(path);
+            if (route === null) continue;
+
+            router.put(route, on(normalize(cwd + path)));
+        }
 
         const match = router.buildMatcher(compileOptions, null);
         return (req: Request) => {

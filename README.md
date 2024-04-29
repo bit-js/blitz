@@ -107,6 +107,14 @@ export default {
 }
 ```
 
+### Route style
+Route style is a function that accepts a relative path and returns the correct route pattern.
+```ts
+type Style = (path: string) => string | null;
+```
+
+If the return result is null the path will be ignored.
+
 #### Default style
 - `basic`: NextJS route style (wildcard only supports `[...]` and wildcard parameter name is always `$`).
 - `preserve`: No modifications to the path.
