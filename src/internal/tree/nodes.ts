@@ -438,7 +438,9 @@ export class Node {
                 // Set param
                 const value = ctx.slicePath(prevIndex);
 
-                builder.push(`params.${name}=${value};`);
+                builder.push(`c.params${isChildParam
+                    ? `.${name}=${value};`
+                    : `={${name}:${value}};`}`);
                 builder.push(ctx.yield(params.store));
 
                 // End the if statement
@@ -451,8 +453,9 @@ export class Node {
                 // Additional check if no store is provided (if store exists the previous part should match and return the store)
                 if (!paramHasStore) builder.push(`if(i!==-1){`);
 
-                // Assign param
-                builder.push(`params.${name}=${value};`);
+                builder.push(`c.params${isChildParam
+                    ? `.${name}=${value};`
+                    : `={${name}:${value}};`}`);
 
                 // Handle inert
                 params.inert!.compile(
@@ -476,7 +479,9 @@ export class Node {
             const value = ctx.slicePath(pathLen);
 
             // Assign wildcard parameter
-            builder.push(`params.$=${value};`)
+            builder.push(`c.params${isChildParam
+                ? `.$=${value};`
+                : `={$:${value}};`}`);
             builder.push(ctx.yield(this.wildcardStore));
             builder.push(';');
 

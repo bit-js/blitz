@@ -128,7 +128,7 @@ export class Tree {
             builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
 
         // Detect path length
-        builder.push('const {length}=path,params=c.params={};');
+        builder.push('const {length}=path;');
 
         // Create dynamic routes check
         root.compile(ctx, '1', false, false);
