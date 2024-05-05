@@ -121,20 +121,17 @@ export class Tree {
 
         // Global build context
         const builder = ['const {path}=c;'];
-        const ctx: BuildContext = new BuildContext(options, builder);
+        const ctx: BuildContext = new BuildContext(options, fallback, builder);
 
         // Create static routes check
         if (staticMap !== null)
-            builder.push(`const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')${ctx.yieldToken('m')};`);
-
-        // Detect path length
-        builder.push('const {length}=path;');
+            builder.push(`const m=${ctx.insert(staticMap)}[path];if(m!==undefined)${ctx.yieldToken('m')};`);
 
         // Create dynamic routes check
         root.compile(ctx, '1', false, false);
 
         // Only need the fallback if root wildcard does not exist
-        if (root.wildcardStore === null) builder.push(ctx.yield(fallback));
+        if (root.wildcardStore === null) builder.push(ctx.fallbackRet);
 
         return ctx.build();
     }

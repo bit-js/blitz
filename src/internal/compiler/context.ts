@@ -23,6 +23,11 @@ export default class BuildContext {
     readonly options: Required<Options>;
 
     /**
+     * Fallback return statement
+     */
+    readonly fallbackRet: string;
+
+    /**
      * The current ID of the store
      */
     currentID: number = 0;
@@ -30,9 +35,10 @@ export default class BuildContext {
     /**
      * Create the build context
      */
-    constructor(options: Options, readonly builder: string[] = []) {
+    constructor(options: Options, fallback: any, readonly builder: string[] = []) {
         options.invokeResultFunction ??= false;
         this.options = options as Required<Options>;
+        this.fallbackRet = this.yield(fallback);
     }
 
     /**

@@ -371,7 +371,7 @@ export class Node {
         const hasStore = this.store !== null;
         if (hasStore)
             // Check whether the current length is equal to current path length
-            builder.push(`if(length===${pathLen})${ctx.yield(this.store)};`);
+            builder.push(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
 
         if (this.inert !== null) {
             const nextPathLen = plus(pathLen, 1);
@@ -424,16 +424,17 @@ export class Node {
                 paramHasStore = params.store !== null,
                 { name } = params;
 
-            // Declare the current param index variable if inert is found
-            if (!isChildParam) builder.push('let ');
-            builder.push(`i=${ctx.searchPath('/', prevIndex)};`);
+            const nextSlashIdx = ctx.searchPath('/', prevIndex);
 
-            // Param should not be empty
-            builder.push(`if(i!==${prevIndex}){`);
+            // Declare the current param index variable if inert is found
+            if (!paramHasStore || paramHasInert) {
+                if (!isChildParam) builder.push('let ');
+                builder.push(`i=${nextSlashIdx};`);
+            }
 
             // Check slash index and get the parameter value if store is found
             if (paramHasStore) {
-                builder.push(`if(i===-1){`);
+                builder.push(`if(${paramHasInert ? 'i' : nextSlashIdx}===-1){`);
 
                 // Set param
                 const value = ctx.slicePath(prevIndex);
@@ -451,7 +452,11 @@ export class Node {
                 const value = ctx.substringPath(prevIndex, 'i');
 
                 // Additional check if no store is provided (if store exists the previous part should match and return the store)
-                if (!paramHasStore) builder.push(`if(i!==-1){`);
+                // Param should not be empty
+                builder.push(paramHasStore
+                    ? `if(i!==${prevIndex}){`
+                    : `if(i!==-1&&i!==${prevIndex}){`
+                );
 
                 builder.push(`c.params${isChildParam
                     ? `.${name}=${value};`
@@ -464,17 +469,14 @@ export class Node {
                     isChildParam
                 );
 
-                if (!paramHasStore) builder.push('}');
+                // Close the bracket of the if statement
+                builder.push('}');
             }
-
-            // Close the bracket for the first if statement 
-            // That checks if parameter is empty
-            builder.push('}');
         }
 
         if (this.wildcardStore !== null) {
             // Check if current path length is larger than the wildcard path
-            if (!hasStore) builder.push(`if(length!==${pathLen}){`)
+            if (!hasStore) builder.push(`if(path.length!==${pathLen}){`)
 
             const value = ctx.slicePath(pathLen);
 
@@ -535,20 +537,21 @@ export class Node {
             const { params } = this;
             const slashIndex = path.indexOf('/', startIndex);
 
-            if (slashIndex !== startIndex) { // Params cannot be empty
-                if (slashIndex === -1) {
-                    if (params.store !== null) {
-                        // This is much faster than using a computed property
-                        param[params.name] = path.substring(startIndex);
-                        return params.store;
-                    }
-                } else if (params.inert !== null) {
-                    const route = params.inert.matchRoute(path, param, slashIndex);
+            if (slashIndex === -1) {
+                if (params.store !== null) {
+                    // This is much faster than using a computed property
+                    param[params.name] = path.substring(startIndex);
+                    return params.store;
+                }
+            }
 
-                    if (route !== null) {
-                        param[params.name] = path.substring(startIndex, slashIndex);
-                        return route;
-                    }
+            // Params cannot be empty
+            else if (slashIndex !== startIndex && params.inert !== null) {
+                const route = params.inert.matchRoute(path, param, slashIndex);
+
+                if (route !== null) {
+                    param[params.name] = path.substring(startIndex, slashIndex);
+                    return route;
                 }
             }
         }
