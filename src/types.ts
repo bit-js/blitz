@@ -25,7 +25,7 @@ export type Params<Path extends string, Value = string> = {
 /**
  * Request context
  */
-export class Context<Params> implements BaseContext, ResponseInit {
+export class Context<Params> implements BaseContext {
     path: string;
 
     pathStart: number;
@@ -33,41 +33,30 @@ export class Context<Params> implements BaseContext, ResponseInit {
 
     // Parsed parameters (Must be manually typed by the framework dev)
     readonly params: Params;
-
-    // ResponseInit options
-    headers: Record<string, string>;
-    status: number;
-    statusText: string;
+    readonly req: Request;
 
     /**
      * Parse the request
      */
-    constructor(readonly req: Request) {
-        const start = req.url.indexOf('/', 12),
-            end = req.url.indexOf('?', start + 1);
+    constructor(req: Request) {
+        const { url } = req;
+
+        const start = url.indexOf('/', 12);
+        const end = url.indexOf('?', start + 1);
 
         this.pathStart = start;
-
-        if (end === -1) {
-            this.path = req.url.substring(start);
-            this.pathEnd = req.url.length;
-        } else {
-            this.path = req.url.substring(start, end);
-            this.pathEnd = end;
-        }
+        this.req = req;
+        this.path = url.substring(start, this.pathEnd = end === -1 ? url.length : end);
     }
+}
+
+export interface Context<Params> {
+    // ResponseInit options
+    headers: Record<string, string>;
+    status: number;
+    statusText: string;
 }
 
 export type GenericHandler = (c: Context<any>) => any;
 
 export interface ContextOptions extends Partial<Context<any>>, Record<string, any> { };
-
-export function extendContext(C: any, defaultOpts?: ContextOptions): any {
-    if (typeof defaultOpts === 'undefined') return C;
-
-    const parts: string[] = [];
-    for (const prop in defaultOpts)
-        parts.push(`${prop}=${JSON.stringify(defaultOpts[prop])}`);
-
-    return Function(`return (C)=>{return class A extends C{${parts.join()}}}`)()(C);
-}

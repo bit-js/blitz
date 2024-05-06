@@ -32,9 +32,6 @@ The request context contains:
 - `pathStart`: The request pathname start index in the request URL.
 - `pathEnd`: The request pathname end index in the request URL.
 - `params`: Request URL parameters.
-- `headers`: Response headers.
-- `status`: Response status.
-- `statusText`: Response status text.
 - `req`: The raw request object.
 
 ## Other routers
