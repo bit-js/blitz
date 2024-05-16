@@ -1,7 +1,7 @@
 import { Context as BaseContext, type GenericHandler } from '../types';
 
 import type { BaseRouter } from '../internal';
-import type { Context, Matcher, Options } from '../internal/tree/types';
+import { type Context, type Matcher, Options } from '../internal/tree/types';
 
 export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseRouter<GenericHandler>> {
     /**
@@ -22,14 +22,14 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
     /**
      * Create a router
      */
-    constructor(readonly options: Options = {}) {
+    constructor(readonly options: Options = new Options()) {
         this.options = options;
     }
 
     /**
      * Register a handler
      */
-    abstract put(method: string, path: string, handler: any): void;
+    abstract on(method: string, path: string, handler: any): void;
 
     /**
      * Register a handler for all method
@@ -47,7 +47,7 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
                 const router = methodRouter[method];
 
                 if (typeof router === 'undefined') methodRouter[method] = otherMethodRouter[method];
-                else router.merge(base, otherMethodRouter[method]);
+                else router.route(base, otherMethodRouter[method]);
             }
         }
 
@@ -55,7 +55,7 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
             const { fallbackRouter } = this;
 
             if (typeof fallbackRouter === 'undefined') this.fallbackRouter = otherFallbackRouter;
-            else fallbackRouter.merge(base, otherFallbackRouter);
+            else fallbackRouter.route(base, otherFallbackRouter);
         }
     }
 

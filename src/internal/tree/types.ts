@@ -16,7 +16,7 @@ export class Context {
 /**
  * Router option
  */
-export interface Options {
+export class Options {
     invokeResultFunction?: boolean;
 }
 

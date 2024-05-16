@@ -6,15 +6,15 @@ export default class Blitz<Handler = GenericHandler> extends Router<Radix<Handle
     /**
      * Register a handler
      */
-    put(method: string, path: string, handler: Handler) {
-        ((this.methodRouter ??= {})[method] ??= new Radix()).put(path, handler);
+    on(method: string, path: string, handler: Handler) {
+        ((this.methodRouter ??= {})[method] ??= new Radix()).on(path, handler);
     }
 
     /**
      * Register a handler for all method
      */
     handle(path: string, handler: Handler) {
-        (this.fallbackRouter ??= new Radix()).put(path, handler);
+        (this.fallbackRouter ??= new Radix()).on(path, handler);
     }
 }
 
@@ -22,14 +22,14 @@ export class EdgeRouter<Handler = GenericHandler> extends Router<Edge<Handler>> 
     /**
      * Register a handler
      */
-    put(method: string, path: string, handler: Handler) {
-        ((this.methodRouter ??= {})[method] ??= new Edge()).put(path, handler);
+    on(method: string, path: string, handler: Handler) {
+        ((this.methodRouter ??= {})[method] ??= new Edge()).on(path, handler);
     }
 
     /**
      * Register a handler for all method
      */
     handle(path: string, handler: Handler) {
-        (this.fallbackRouter ??= new Edge()).put(path, handler);
+        (this.fallbackRouter ??= new Edge()).on(path, handler);
     }
 }

@@ -10,18 +10,9 @@ export abstract class BaseRouter<T> {
     readonly tree: Tree = new Tree();
 
     /**
-     * Register routes
-     */
-    routes(routes: Route<T>[]): this {
-        for (let i = 0, { length } = routes; i < length; ++i) this.put(...routes[i]);
-
-        return this;
-    }
-
-    /**
      * Register a route
      */
-    put(path: Route<T>[0], handler: Route<T>[1]): this {
+    on(path: Route<T>[0], handler: Route<T>[1]): this {
         this.tree.store(path, handler);
         return this;
     }
@@ -29,7 +20,7 @@ export abstract class BaseRouter<T> {
     /**
      * Merge with another similar router
      */
-    merge(base: string, router: this) {
+    route(base: string, router: this) {
         this.tree.merge(base, router.tree);
     }
 

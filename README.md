@@ -8,13 +8,13 @@ import Blitz from '@bit-js/blitz';
 const router = new Blitz();
 
 // Register paths
-router.put('GET', '/', () => new Response('Hi'));
+router.on('GET', '/', () => new Response('Hi'));
 
 // Wildcard parameter
-router.put('GET', '/search/*', ctx => new Response(ctx.params.$));
+router.on('GET', '/search/*', ctx => new Response(ctx.params.$));
 
 // Path parameters
-router.put('PUT', '/update/:id', ctx => new Response(ctx.params.id));
+router.on('PUT', '/update/:id', ctx => new Response(ctx.params.id));
 
 // Register another router with the same type as a subrouter
 router.route('/api', anotherRouter);
@@ -50,20 +50,21 @@ const router = new EdgeRouter();
 ```
 
 API usage is the same as `Blitz`. 
-`EdgeRouter` should be used in edge runtimes as `Blitz` is around 2x faster in any other scenarios. 
+`EdgeRouter` should be used in edge runtimes as `Blitz` is around 1.5x faster and use less memory in other scenarios. 
 
 It is possible to re-use the matcher of `EdgeRouter` after adding more routes, unlike `Blitz`.
 ```ts
-// Add some routes
-router.put('GET', '/', () => new Response('Hi'));
+// Add some routes (need to be both static and dynamic routes)
+router.on('GET', '/', () => new Response('Hi'));
+router.on('GET', '/user/:id', (ctx) => new Response(ctx.params.id));
 
-// Match '/'
+// Match '/' and '/user/:id'
 const fetch = router.build();
 
 // Add another route
-router.put('GET', '/user/:id', (ctx) => new Response(ctx.params.id));
+router.on('GET', '/user/*', (ctx) => new Response(ctx.params.$));
 
-// Fetch now handles both '/' and '/user/:id'
+// Fetch now handles '/', '/user/:id'
 fetch(req);
 ```
 
@@ -79,12 +80,12 @@ const router = new internal.Radix<number>();
 const router = new internal.Edge<number>();
 
 // Register routes
-router.put('/', 0);
-router.put('/:id', 1);
-router.put('/*', 2);
+router.on('/', 0);
+router.on('/:id', 1);
+router.on('/*', 2);
 
 // Merging routes
-router.merge(otherInternalRouter);
+router.route('/api', otherInternalRouter);
 
 // Get the matching function
 const f = router.buildMatcher({}, 3);
@@ -93,8 +94,8 @@ f(ctx);
 ```
 
 The match context only has:
-`ctx.path`: The parsed pathname.
-`ctx.params`: The output parameters.
+- `ctx.path`: The parsed pathname.
+- `ctx.params`: The output parameters.
 
 ### FS router
 A cross-runtime file system router API.
@@ -139,7 +140,7 @@ Route style is a function that accepts a relative path and returns the correct r
 type Style = (path: string) => string | null;
 ```
 
-If the return result is null the path will be ignored.
+If the return result is `null` the path will be ignored.
 
 #### Default style
 - `basic`: NextJS route style (wildcard only supports `[...]` and wildcard parameter name is always `$`).

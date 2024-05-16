@@ -6,7 +6,7 @@ import createContext from '@utils/createContext';
 
 function run(name: string, router: internal.BaseRouter<number>) {
     for (let i = 0; i < pathsCount; ++i)
-        router.put(paths[i], i);
+        router.on(paths[i], i);
 
     // Compile the tree
     const f = router.buildMatcher({}, pathsCount);

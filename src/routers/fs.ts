@@ -141,7 +141,7 @@ class Router<T> {
             const route = style(path);
             if (route === null) continue;
 
-            router.put(route, on(normalize(cwd + path)));
+            router.on(route, on(normalize(cwd + path)));
         }
 
         const match = router.buildMatcher(compileOptions, null);

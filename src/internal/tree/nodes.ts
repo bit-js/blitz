@@ -503,23 +503,26 @@ export class Node {
         const { part } = this;
         const { length } = path;
 
-        const pathPartLen = part.length;
-        const pathPartEndIndex = startIndex + pathPartLen;
+        // Quick GC
+        {
+            const pathPartLen = part.length;
+            const pathPartEndIndex = startIndex + pathPartLen;
 
-        // Only check the pathPart if its length is > 1 since the parent has
-        // already checked that the url matches the first character
-        if (pathPartLen > 1) {
-            if (pathPartEndIndex > length)
-                return null;
+            // Only check the pathPart if its length is > 1 since the parent has
+            // already checked that the url matches the first character
+            if (pathPartLen > 1) {
+                if (pathPartEndIndex > length)
+                    return null;
 
-            // Using a loop is faster for short strings
-            if (pathPartLen < 15) {
-                for (let i = 1, j = startIndex + 1; i < pathPartLen; ++i, ++j)
-                    if (part[i] !== path[j]) return null;
-            } else if (path.substring(startIndex, pathPartEndIndex) !== part) return null;
+                // Using a loop is faster for short strings
+                if (pathPartLen < 15) {
+                    for (let i = 1, j = startIndex + 1; i < pathPartLen; ++i, ++j)
+                        if (part[i] !== path[j]) return null;
+                } else if (path.substring(startIndex, pathPartEndIndex) !== part) return null;
+            }
+
+            startIndex = pathPartEndIndex;
         }
-
-        startIndex = pathPartEndIndex;
 
         // Reached the end of the URL (Does not match wildcard)
         if (startIndex === length) return this.store;
@@ -539,7 +542,6 @@ export class Node {
 
             if (slashIndex === -1) {
                 if (params.store !== null) {
-                    // This is much faster than using a computed property
                     param[params.name] = path.substring(startIndex);
                     return params.store;
                 }

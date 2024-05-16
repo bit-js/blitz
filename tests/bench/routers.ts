@@ -14,7 +14,7 @@ const routers = {
 // Register routes
 for (let i = 0; i < pathsCount; ++i)
     for (const name in routers)
-        routers[name].put(paths[i], i);
+        routers[name].on(paths[i], i);
 
 // Build all routers into matchers
 const fns: Record<string, any> = {};
