@@ -1,7 +1,7 @@
 {
   "name": "@bit-js/blitz",
   "main": "lib/index.js",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest",
@@ -24,7 +24,9 @@
   },
   "keywords": [
     "router",
-    "web"
+    "url",
+    "fast",
+    "backend"
   ],
   "sideEffects": "false"
 }
