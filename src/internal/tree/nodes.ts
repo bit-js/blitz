@@ -50,7 +50,7 @@ export class ParamNode {
 }
 
 export class InertStore {
-    store: Record<string, Node> = {};
+    store: Record<number, Node> = {};
 
     size: number = 0;
     lastChild: Node;
@@ -61,7 +61,7 @@ export class InertStore {
      */
     put(item: Node) {
         this.lastChild = item;
-        this.store[item.part[0]] = item;
+        this.store[item.part.charCodeAt(0)] = item;
         ++this.size;
     }
 }
@@ -127,7 +127,7 @@ export class Node {
      * @internal
      */
     setInert(node: Node) {
-        const store = (this.inert ??= new InertStore()).store[node.part[0]];
+        const store = (this.inert ??= new InertStore()).store[node.part.charCodeAt(0)];
 
         if (typeof store === 'undefined') this.inert.put(node);
         else store.mergeWithInert(node);
@@ -177,7 +177,7 @@ export class Node {
                     if (node.inert === null) node.inert = new InertStore();
                     else {
                         // Only perform hashing once instead of .has & .get
-                        const inert = node.inert.store[inertPart[j]];
+                        const inert = node.inert.store[inertPart.charCodeAt(j)];
 
                         // Re-run loop with existing static node
                         if (typeof inert !== 'undefined') {
@@ -394,7 +394,7 @@ export class Node {
                 builder.push(`switch(path.charCodeAt(${pathLen})){`);
                 for (const key in store) {
                     // Create a case statement for each char code
-                    builder.push(`case ${key.charCodeAt(0)}:`);
+                    builder.push(`case ${key}:`);
                     store[key].compile(
                         ctx, nextPathLen, isChildParam, isNestedChildParam
                     );
@@ -528,7 +528,7 @@ export class Node {
         if (startIndex === length) return this.store;
 
         if (this.inert !== null) {
-            const staticChild = this.inert.store[path[startIndex]];
+            const staticChild = this.inert.store[path.charCodeAt(startIndex)];
 
             if (typeof staticChild !== 'undefined') {
                 const route = staticChild.matchRoute(path, param, startIndex);

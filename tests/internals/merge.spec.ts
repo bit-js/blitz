@@ -4,7 +4,7 @@ import { internal } from '@bit-js/blitz';
 import createContext from '@utils/createContext';
 import { paths, pathsCount } from '@utils/paths';
 
-const testPrefixes = ['/', '/base', '/nested/prefix', '/a/random/parameter/:param', '/a/random/param/:a/followed/by/path'];
+const testPrefixes = ['/', '/base', '/nested/prefix'];
 
 for (let i = 0, { length } = testPrefixes; i < length; ++i) {
     const actualPaths = new Array<string>(pathsCount);

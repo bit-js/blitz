@@ -26,7 +26,7 @@ export class Tree {
         if (length !== 1 && lastCharCode === 47) throw new Error('Path should not end with a slash');
 
         // If path includes parameters or wildcard add to the tree
-        if (path.includes(':') || lastCharCode === 42) (this.root ??= new Node('/')).insert(path, store);
+        if (lastCharCode === 42 || path.includes(':')) (this.root ??= new Node('/')).insert(path, store);
 
         // Static path matches faster with a map
         else (this.staticMap ??= {})[path] ??= store;
@@ -48,7 +48,7 @@ export class Tree {
                 this.root = new Node('/');
         }
 
-        (this.root ??= new Node('/')).insert(base, null).mergeWithRoot(root);
+        this.root.insert(base, null).mergeWithRoot(root);
     }
 
     /**
@@ -65,15 +65,9 @@ export class Tree {
                     oldStaticMap[key] ??= staticMap[key];
             }
         } else {
-            // Base can be dynamic
-            if (base.includes(':')) {
-                // Put all static routes into a new node and merge
-                const root = this.root ??= new Node('/');
-                for (const key in staticMap)
-                    root.insert(key.length === 1 ? base : `${base}${key}`, staticMap[key]);
-
-                return;
-            }
+            // Base should not be dynamic
+            if (base.includes(':'))
+                throw new Error(`Base cannot includes patterns, instead recieved: ${base}`);
 
             // Merge 
             const oldStaticMap = this.staticMap ??= {};
@@ -125,7 +119,7 @@ export class Tree {
 
         // Create static routes check
         if (staticMap !== null)
-            builder.push(`const m=${ctx.insert(staticMap)}[path];if(m!==undefined)${ctx.yieldToken('m')};`);
+            builder.push(`{const m=${ctx.insert(staticMap)}[path];if(m!==undefined)${ctx.yieldToken('m')};}`);
 
         // Create dynamic routes check
         root.compile(ctx, '1', false, false);
