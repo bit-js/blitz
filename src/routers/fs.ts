@@ -42,7 +42,7 @@ const defaultStyleMap = {
             return path.substring(0, startPathExt);
         }
 
-        let pathBuilder = '';
+        let pathBuilder = path.charCodeAt(0) === 47 ? '' : '/';
         let startIdx = 0;
 
         do {
