@@ -52,7 +52,7 @@ export class Context<Params> implements BaseContext {
 
 export interface Context<Params> {
     // ResponseInit options
-    headers: Record<string, string | string[]>;
+    headers: Headers | string[][] | Record<string, string>;
     status: number;
     statusText: string;
 }
