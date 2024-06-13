@@ -13,79 +13,49 @@ declare namespace Router {
     }
 }
 
+function trimPath(path: string) {
+    const startExt = path.lastIndexOf('.');
+
+    return startExt === -1
+        ? (path.endsWith('/index')
+            ? (path.length === 6 ? '/' : path.substring(path.length - 6))
+            : path
+        ) : (path.charCodeAt(startExt - 1) === 120
+            && path.charCodeAt(startExt - 2) === 101
+            && path.charCodeAt(startExt - 3) === 100
+            && path.charCodeAt(startExt - 4) === 110
+            && path.charCodeAt(startExt - 5) === 105
+            ? (startExt === 6 ? '/' : path.substring(0, startExt - 6))
+            : path.substring(0, startExt)
+        );
+}
+
 /**
  * Default parsing for path
  */
 const defaultStyleMap = {
     basic(path) {
-        let startBracketIdx = path.indexOf('[');
-
-        // Slice out extension
-        if (startBracketIdx === -1) {
-            const startPathExt = path.lastIndexOf('.');
-            if (startPathExt === -1) return path.endsWith('index') ? path.substring(0, path.length - 5) : path;
-
-            // [47, 105, 110, 100, 101, 120] -> /index
-            if (path.charCodeAt(startPathExt - 1) === 120) {
-                if (path.charCodeAt(startPathExt - 2) === 101) {
-                    if (path.charCodeAt(startPathExt - 3) === 100) {
-                        if (path.charCodeAt(startPathExt - 4) === 110) {
-                            if (path.charCodeAt(startPathExt - 5) === 105) {
-                                if (startPathExt === 5 || path.charCodeAt(startPathExt - 6) === 47)
-                                    return path.substring(0, startPathExt - 5);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return path.substring(0, startPathExt);
-        }
-
+        let bracketIdx = path.indexOf('[');
         let pathBuilder = path.charCodeAt(0) === 47 ? '' : '/';
         let startIdx = 0;
 
-        do {
-            pathBuilder += path.substring(startIdx, startBracketIdx);
-
-            // [...]
-            if (path.charCodeAt(startBracketIdx + 1) === 46) {
-                if (path.charCodeAt(startBracketIdx + 2) === 46) {
-                    if (path.charCodeAt(3) === 46)
-                        // eslint-disable-next-line
-                        return pathBuilder + '*';
-                }
-            }
+        while (bracketIdx !== -1) {
+            pathBuilder += path.substring(startIdx, bracketIdx);
+            if (path.charCodeAt(bracketIdx + 1) === 46
+                && path.charCodeAt(bracketIdx + 2) === 46
+                && path.charCodeAt(bracketIdx + 3) === 46
+            ) return trimPath(pathBuilder + '*');
 
             pathBuilder += ':';
 
-            startIdx = path.indexOf(']', startBracketIdx);
-            pathBuilder += path.substring(startBracketIdx + 1, startIdx);
+            startIdx = path.indexOf(']', bracketIdx);
+            pathBuilder += path.substring(bracketIdx + 1, startIdx);
 
             ++startIdx;
-            startBracketIdx = path.indexOf('[', startIdx);
-        } while (startBracketIdx !== -1);
-
-        // Slice out extension
-        const startPathExt = path.lastIndexOf('.');
-
-        if (startPathExt === -1)
-            pathBuilder += path.endsWith('index') ? path.substring(startIdx, path.length - 5) : path.substring(startIdx);
-
-        else if (path.charCodeAt(startPathExt - 1) === 120) {
-            if (path.charCodeAt(startPathExt - 2) === 101) {
-                if (path.charCodeAt(startPathExt - 3) === 100) {
-                    if (path.charCodeAt(startPathExt - 4) === 110) {
-                        if (path.charCodeAt(startPathExt - 5) === 105) {
-                            if (startPathExt === 5 || path.charCodeAt(startPathExt - 6) === 47)
-                                pathBuilder += path.substring(0, startPathExt - 5);
-                        }
-                    }
-                }
-            }
+            bracketIdx = path.indexOf('[', startIdx);
         }
 
-        return pathBuilder;
+        return trimPath(pathBuilder + path.substring(startIdx));
     },
 
     preserve(path) {
@@ -122,9 +92,7 @@ class Router<T> {
     constructor({ style, on, scan }: Router.Options<T>) {
         this.style = typeof style === 'undefined'
             ? defaultStyleMap.basic
-            : typeof style === 'string' ?
-                defaultStyleMap[style]
-                : style;
+            : typeof style === 'string' ? defaultStyleMap[style] : style;
 
         this.on = on;
         this.scanFiles = scan;
@@ -137,10 +105,20 @@ class Router<T> {
         const { on, style, scanFiles } = this;
 
         const router = new Radix<T>();
-        for (const path of scanFiles(cwd)) {
+        const files = scanFiles(cwd);
+
+        // Optimize for arrays
+        if (Array.isArray(files)) for (let i = 0, { length } = files; i < length; ++i) {
+            const path = files[i];
             const route = style(path);
             if (route === null) continue;
+            router.on(route, on(normalize(cwd + path)));
+        }
 
+        // For iterators
+        else for (const path of files) {
+            const route = style(path);
+            if (route === null) continue;
             router.on(route, on(normalize(cwd + path)));
         }
 

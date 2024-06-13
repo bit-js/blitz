@@ -150,8 +150,7 @@ export class Node {
         for (let i = 0, { length } = inertParts; i < length; ++i) {
             if (i !== 0) {
                 // Set param on the node
-                const params = node.param(paramParts[paramPartsIndex]);
-                ++paramPartsIndex;
+                const params = node.param(paramParts[paramPartsIndex++]);
 
                 // Set inert
                 if (params.inert === null) {
@@ -363,10 +362,7 @@ export class Node {
 
         // No condition check for root (no scope should be created)
         const isNotRoot = part.length !== 1;
-        if (isNotRoot) {
-            builder.push(ctx.createTopLevelCheck(part, prevPathLen, pathLen));
-            builder.push('{');
-        }
+        if (isNotRoot) builder.push(ctx.createTopLevelCheck(part, prevPathLen, pathLen) + '{');
 
         const hasStore = this.store !== null;
         if (hasStore)
@@ -381,9 +377,7 @@ export class Node {
                 const { lastChild } = this.inert;
 
                 builder.push(`if(path.charCodeAt(${pathLen})===${lastChild.part.charCodeAt(0)}){`);
-                lastChild.compile(
-                    ctx, nextPathLen, isChildParam, isNestedChildParam
-                );
+                lastChild.compile(ctx, nextPathLen, isChildParam, isNestedChildParam);
                 builder.push('}');
             }
 
@@ -395,9 +389,7 @@ export class Node {
                 for (const key in store) {
                     // Create a case statement for each char code
                     builder.push(`case ${key}:`);
-                    store[key].compile(
-                        ctx, nextPathLen, isChildParam, isNestedChildParam
-                    );
+                    store[key].compile(ctx, nextPathLen, isChildParam, isNestedChildParam);
                     builder.push('break;');
                 }
                 builder.push('}');
@@ -499,67 +491,53 @@ export class Node {
      * Match a route
      * @internal
      */
-    matchRoute(path: string, param: Record<string, string>, startIndex: number) {
+    matchRoute(path: string, param: Record<string, string>, startIdx: number) {
         const { part } = this;
         const { length } = path;
 
-        // Quick GC
-        {
-            const pathPartLen = part.length;
-            const pathPartEndIndex = startIndex + pathPartLen;
+        const pathPartLen = part.length;
+        const pathPartEndIndex = startIdx + pathPartLen;
 
-            // Only check the pathPart if its length is > 1 since the parent has
-            // already checked that the url matches the first character
-            if (pathPartLen > 1) {
-                if (pathPartEndIndex > length)
-                    return null;
-
-                // Using a loop is faster for short strings
-                if (pathPartLen < 15) {
-                    for (let i = 1, j = startIndex + 1; i < pathPartLen; ++i, ++j)
-                        if (part[i] !== path[j]) return null;
-                } else if (path.substring(startIndex, pathPartEndIndex) !== part) return null;
-            }
-
-            startIndex = pathPartEndIndex;
-        }
+        // Only check the pathPart if its length is > 1 since the parent has
+        // already checked that the url matches the first character
+        if (pathPartLen > 1 && (pathPartEndIndex > length || path.indexOf(part, startIdx) !== startIdx)) return null;
 
         // Reached the end of the URL (Does not match wildcard)
-        if (startIndex === length) return this.store;
+        if (pathPartEndIndex === length) return this.store;
 
         if (this.inert !== null) {
-            const staticChild = this.inert.store[path.charCodeAt(startIndex)];
+            const staticChild = this.inert.store[path.charCodeAt(pathPartEndIndex)];
 
             if (typeof staticChild !== 'undefined') {
-                const route = staticChild.matchRoute(path, param, startIndex);
+                const route = staticChild.matchRoute(path, param, pathPartEndIndex);
                 if (route !== null) return route;
             }
         }
 
         if (this.params !== null) {
             const { params } = this;
-            const slashIndex = path.indexOf('/', startIndex);
+            const slashIndex = path.indexOf('/', pathPartEndIndex);
 
             if (slashIndex === -1) {
                 if (params.store !== null) {
-                    param[params.name] = path.substring(startIndex);
+                    param[params.name] = path.substring(pathPartEndIndex);
                     return params.store;
                 }
             }
 
             // Params cannot be empty
-            else if (slashIndex !== startIndex && params.inert !== null) {
+            else if (slashIndex !== pathPartEndIndex && params.inert !== null) {
                 const route = params.inert.matchRoute(path, param, slashIndex);
 
                 if (route !== null) {
-                    param[params.name] = path.substring(startIndex, slashIndex);
+                    param[params.name] = path.substring(pathPartEndIndex, slashIndex);
                     return route;
                 }
             }
         }
 
         if (this.wildcardStore !== null) {
-            param.$ = path.substring(startIndex);
+            param.$ = path.substring(pathPartEndIndex);
             return this.wildcardStore;
         }
 

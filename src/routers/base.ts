@@ -74,9 +74,7 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
             return (req) => fallback(new Construct(req));
 
         // Compile method callers (It invokes the function directly instead of returning the matching function)
-        const methodCaller = new MethodMatcher();
-        for (const method in methodRouter)
-            methodCaller[method] = methodRouter[method].buildCaller(this.options, fallback);
+        const methodCaller = new MethodMatcher(methodRouter, this.options, fallback);
 
         return (req) => (methodCaller[req.method] ?? fallback)(new Construct(req));
     }
@@ -90,6 +88,11 @@ class MethodMatcher {
     OPTIONS: Matcher;
     TRACE: Matcher;
     HEAD: Matcher;
+
+    constructor(router: Record<string, BaseRouter<any>>, ...args: [Options, any]) {
+        for (const method in router)
+            this[method] = router[method].buildCaller(...args);
+    }
 }
 
 // Utils
