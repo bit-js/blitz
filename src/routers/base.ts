@@ -1,7 +1,7 @@
 import { Context as BaseContext, type GenericHandler } from '../types';
 
 import type { BaseRouter } from '../internal';
-import { type Context, type Matcher, Options } from '../internal/tree/types';
+import { type Context, Options } from '../internal/tree/types';
 
 export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseRouter<GenericHandler>> {
     /**
@@ -23,6 +23,7 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
      * Create a router
      */
     constructor(readonly options: Options = new Options()) {
+        options.invokeResultFunction = true;
         this.options = options;
     }
 
@@ -63,35 +64,20 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
      * Build the router
      */
     build(Construct: new (req: Request) => Context = BaseContext): (req: Request) => any {
-        const { methodRouter, fallbackRouter } = this;
-        const fallback = typeof fallbackRouter === 'undefined'
-            ? this.fallback
-            : fallbackRouter.buildCaller(this.options, this.fallback);
+        const { methodRouter, options } = this;
+        const fallback = this.fallbackRouter?.buildCaller(options, this.fallback) ?? this.fallback;
 
         // Use fallbackRouter matcher as fallback if it exist
         // Call the fallback directly if no method router exists
-        if (typeof methodRouter === 'undefined')
+        if (methodRouter === undefined)
             return (req) => fallback(new Construct(req));
 
         // Compile method callers (It invokes the function directly instead of returning the matching function)
-        const methodCaller = new MethodMatcher(methodRouter, this.options, fallback);
+        const methodCaller = {};
+        for (const method in methodRouter)
+            methodCaller[method] = methodRouter[method].buildCaller(options, fallback);
 
         return (req) => (methodCaller[req.method] ?? fallback)(new Construct(req));
-    }
-}
-
-class MethodMatcher {
-    GET: Matcher;
-    POST: Matcher;
-    PUT: Matcher;
-    PATCH: Matcher;
-    OPTIONS: Matcher;
-    TRACE: Matcher;
-    HEAD: Matcher;
-
-    constructor(router: Record<string, BaseRouter<any>>, ...args: [Options, any]) {
-        for (const method in router)
-            this[method] = router[method].buildCaller(...args);
     }
 }
 

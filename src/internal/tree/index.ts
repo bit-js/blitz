@@ -92,26 +92,10 @@ export class Tree {
     }
 
     /**
-     * Create static matcher only
+     * Get the build context
      */
-    createStaticMatcher(options: Options, fallback: any): Matcher {
-        const { staticMap } = this;
-
-        if (options.invokeResultFunction === true)
-            return staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fallback)(ctx);
-
-        return staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
-    }
-
-    /**
-     * Build a function
-     */
-    compile(options: Options, fallback: any): Matcher {
-        const { root } = this;
-        // Do only static match if no dynamic routes exist
-        if (root === null) return this.createStaticMatcher(options, fallback);
-
-        const { staticMap } = this;
+    inspect(options: Options, fallback: any): BuildContext {
+        const { staticMap, root } = this;
 
         // Global build context
         const builder = ['const {path}=c;'];
@@ -121,24 +105,44 @@ export class Tree {
         if (staticMap !== null)
             builder.push(`{const m=${ctx.insert(staticMap)}[path];if(m!==undefined)${ctx.yieldToken('m')};}`);
 
-        // Create dynamic routes check
-        root.compile(ctx, '1', false, false);
+        if (root !== null) {
+            // Create dynamic routes check
+            root.compile(ctx, '1', false, false);
 
-        // Only need the fallback if root wildcard does not exist
-        if (root.wildcardStore === null) builder.push(ctx.fallbackRet);
+            // Only need the fallback if root wildcard does not exist
+            if (root.wildcardStore === null) builder.push(ctx.fallbackRet);
+        }
 
-        return ctx.build();
+        return ctx;
+    }
+
+    /**
+     * Build a function
+     */
+    compile(options: Options, fallback: any): Matcher {
+        // Do only static match if no dynamic routes exists
+        if (this.root === null) {
+            const { staticMap } = this;
+
+            return options.invokeResultFunction === true
+                ? staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fallback)(ctx)
+                : staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
+        }
+
+        return this.inspect(options, fallback).build();
     }
 
     /**
       * Compile to a dynamic matcher
       */
     compileMatcher(options: Options, fallback: any): Matcher {
-        const { root } = this;
-        // Do only static match if no dynamic routes exist
-        if (root === null) return this.createStaticMatcher(options, fallback);
+        const { root, staticMap } = this;
 
-        const { staticMap } = this;
+        // Do only static match if no dynamic routes exist
+        if (root === null) return options.invokeResultFunction === true
+            ? staticMap === null ? fallback : (ctx) => (staticMap[ctx.path] ?? fallback)(ctx)
+            : staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
+
         if (staticMap === null)
             return options.invokeResultFunction === true
                 ? (ctx) => (root.matchRoute(ctx.path, ctx.params = {}, 0) ?? fallback)(ctx)

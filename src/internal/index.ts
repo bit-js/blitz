@@ -45,6 +45,10 @@ export class Radix<T> extends BaseRouter<T> {
         options.invokeResultFunction = true;
         return this.tree.compile(options, fallback) as any;
     }
+
+    inspect(options: Options, fallback: T | null) {
+        return this.tree.inspect(options, fallback);
+    }
 }
 
 export class Edge<T> extends BaseRouter<T> {

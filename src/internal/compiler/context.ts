@@ -120,6 +120,13 @@ export default class BuildContext {
     }
 
     /**
+     * Return the statement to inline the router to the file
+     */
+    inline() {
+        return `(({paramsValues})=>{${this.paramsKeys.map((key, i) => `const ${key}=paramsValues[${i}]`).join(';')};return (c)=>{${this.builder.join('')}}})`;
+    }
+
+    /**
      * Build a function from a function body and inject stored parameters
      */
     build(): Matcher {
