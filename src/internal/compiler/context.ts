@@ -23,11 +23,6 @@ export default class BuildContext {
     readonly options: Required<Options>;
 
     /**
-     * Fallback return statement
-     */
-    readonly fallbackRet: string;
-
-    /**
      * The current ID of the store
      */
     currentID: number = 0;
@@ -35,10 +30,9 @@ export default class BuildContext {
     /**
      * Create the build context
      */
-    constructor(options: Options, fallback: any, readonly builder: string[] = []) {
+    constructor(options: Options, readonly builder: string[] = []) {
         options.invokeResultFunction ??= false;
         this.options = options as Required<Options>;
-        this.fallbackRet = this.yield(fallback);
     }
 
     /**
@@ -54,25 +48,21 @@ export default class BuildContext {
         return key;
     }
 
-    /**
-     * Get the statement to return the value
-     */
-    yield(value: any): string {
-        if (typeof value === 'undefined') return 'return';
+    inlineValue(value: any): string {
+        if (typeof value === 'undefined') return '';
         if (typeof value !== 'function') {
             if (typeof value !== 'symbol' && typeof value !== 'object')
-                return `return ${JSON.stringify(value)}`;
+                return JSON.stringify(value);
         }
 
-        const key = this.insert(value);
-        return this.options.invokeResultFunction ? `return ${key}${getArgs(value)}` : `return ${key}`;
+        return this.options.invokeResultFunction ? this.insert(value) + getArgs(value) : this.insert(value);
     }
 
     /**
      * Get the statement to return the token value
      */
-    yieldToken(value: string) {
-        return this.options.invokeResultFunction ? `return ${value}(c)` : `return ${value}`;
+    inlineToken(value: string) {
+        return this.options.invokeResultFunction ? value + '(c)' : value;
     }
 
     /**
@@ -123,7 +113,9 @@ export default class BuildContext {
      * Return the statement to inline the router to the file
      */
     inline() {
-        return `(({paramsValues})=>{${this.paramsKeys.map((key, i) => `const ${key}=paramsValues[${i}]`).join(';')};return (c)=>{${this.builder.join('')}}})`;
+        return this.paramsKeys.length === 0
+            ? `(()=>(c)=>{${this.builder.join('')}})`
+            : `(({paramsValues:[${this.paramsKeys}]})=>(c)=>{${this.builder.join('')}})`;
     }
 
     /**

@@ -367,7 +367,7 @@ export class Node {
         const hasStore = this.store !== null;
         if (hasStore)
             // Check whether the current length is equal to current path length
-            builder.push(`if(path.length===${pathLen})${ctx.yield(this.store)};`);
+            builder.push(`if(path.length===${pathLen})return ${ctx.inlineValue(this.store)};`);
 
         if (this.inert !== null) {
             const nextPathLen = plus(pathLen, 1);
@@ -434,7 +434,7 @@ export class Node {
                 builder.push(`c.params${isChildParam
                     ? `.${name}=${value};`
                     : `={${name}:${value}};`}`);
-                builder.push(ctx.yield(params.store));
+                builder.push('return ' + ctx.inlineValue(params.store));
 
                 // End the if statement
                 builder.push('}');
@@ -476,7 +476,7 @@ export class Node {
             builder.push(`c.params${isChildParam
                 ? `.$=${value};`
                 : `={$:${value}};`}`);
-            builder.push(ctx.yield(this.wildcardStore));
+            builder.push('return ' + ctx.inlineValue(this.wildcardStore));
             builder.push(';');
 
             // Close the if statement

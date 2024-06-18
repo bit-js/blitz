@@ -54,13 +54,15 @@ export default class Blitz<Handler = GenericHandler> extends Router<Radix<Handle
     inline({ routerImportSource, contextImportSource }: InlineOptions) {
         const { methodRouter, fallbackRouter } = this;
 
-        const literal = `import r from ${JSON.stringify(routerImportSource)};import {Context} from ${JSON.stringify(contextImportSource)};const t=${fallbackRouter === undefined ? 'r.fallback' : this.fallbackRouterContext?.inline() + '(r.fallbackRouterContext)'};`;
-        if (methodRouter === undefined) return literal + '/** @type {(req: Request)=>any} */export default (c)=>t(new Context(c))';
+        const literal = `/**@ts-nocheck*/import r from ${JSON.stringify(routerImportSource)};import {Context} from ${JSON.stringify(contextImportSource)};${fallbackRouter === undefined ? 'const {fallback}=r' : `const fallback=${this.fallbackRouterContext?.inline()}(r.fallbackRouterContext)`};`;
+        if (methodRouter === undefined) return literal + 'export default (c)=>fallback(new Context(c))';
 
         const { methodRouterContext } = this;
-        return `${literal};const {methodRouterContext}=r;const o={${Object.keys(methodRouter)
-            .map((key) => `${key}:${methodRouterContext![key].inline()}(methodRouterContext.${key})`)
-            .join(',')}};/** @type {(req: Request)=>any} */export default (c)=>(o[c.method]??t)(new Context(c))`;
+        const keys = Object.keys(methodRouter);
+
+        return `${literal}const {methodRouterContext:{${keys}}}=r;const o={${keys
+            .map((key) => `${key}:${methodRouterContext![key].inline()}(${key})`)
+            .join(',')}};export default (c)=>(o[c.method]??fallback)(new Context(c))`;
     }
 }
 
