@@ -115,7 +115,7 @@ export default class BuildContext {
     inline() {
         return this.paramsKeys.length === 0
             ? `(()=>(c)=>{${this.builder.join('')}})`
-            : `(({paramsValues:[${this.paramsKeys}]})=>(c)=>{${this.builder.join('')}})`;
+            : `((${this.paramsKeys})=>(c)=>{${this.builder.join('')}})`;
     }
 
     /**

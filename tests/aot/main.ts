@@ -6,4 +6,4 @@ router.on('GET', '/', () => 0);
 router.on('GET', '/user/:id', () => 1);
 router.on('POST', '/json', () => 2);
 
-export default router.setupInline();
+export default router;

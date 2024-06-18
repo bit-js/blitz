@@ -44,22 +44,22 @@ By default `Blitz` uses just-in-time compilation, which does not work in some en
 
 To bypass this, `Blitz` has a method for compiling into a string to write into a file.
 
-In the source file, add a line to setup the required state:
+In the source file, export your router:
 
 ```ts
-export default router.setupInline();
+export default router;
 ```
 
 In another build file:
 
 ```ts
-import router from "./main.ts";
+import router from "./main";
 
 // Use specific runtime write function
 Bun.write(
   "output.js",
   router.inline({
-    routerImportSource: "./main.ts",
+    routerImportSource: "./main",
     contextImportSource: "@bit-js/blitz",
   }),
 );

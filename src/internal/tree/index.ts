@@ -92,7 +92,29 @@ export class Tree {
     }
 
     /**
+     * Get dependencies for AOT compilation
+     * @internal
+     */
+    getDependencies(fallback: any) {
+        const { root } = this;
+        const dependencies: any[] = [];
+
+        if (this.staticMap !== null) {
+            dependencies.push(this.staticMap);
+            if (root === null) dependencies.push(fallback);
+        }
+
+        if (root !== null) {
+            root.loadDependencies(dependencies);
+            if (root.wildcardStore === null) dependencies.push(fallback);
+        }
+
+        return dependencies;
+    }
+
+    /**
      * Get the build context
+     * @internal
      */
     inspect(options: Options, fallback: any): BuildContext {
         const { staticMap, root } = this;

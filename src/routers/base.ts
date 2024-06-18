@@ -82,5 +82,5 @@ export default abstract class Router<BasicRouter extends BaseRouter<any> = BaseR
 }
 
 // Utils
-const noop = () => null;
+export const noop: any = () => null;
 

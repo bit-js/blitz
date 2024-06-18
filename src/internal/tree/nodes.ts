@@ -488,6 +488,30 @@ export class Node {
     };
 
     /**
+     * Tranverse and load dependency array
+     * @internal
+     */
+    loadDependencies(dependencies: any[]) {
+        if (this.store !== null) dependencies.push(this.store);
+
+        if (this.inert !== null) {
+            const { store } = this.inert;
+
+            for (const key in store)
+                store[key].loadDependencies(dependencies);
+        }
+
+        if (this.params !== null) {
+            const { params } = this;
+
+            if (params.store !== null) dependencies.push(params.store);
+            if (params.inert !== null) params.inert.loadDependencies(dependencies);
+        }
+
+        if (this.wildcardStore !== null) dependencies.push(this.wildcardStore);
+    }
+
+    /**
      * Match a route
      * @internal
      */
