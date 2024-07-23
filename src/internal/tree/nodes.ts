@@ -488,30 +488,6 @@ export class Node {
     };
 
     /**
-     * Tranverse and load dependency array
-     * @internal
-     */
-    loadDependencies(dependencies: any[]) {
-        if (this.store !== null) dependencies.push(this.store);
-
-        if (this.inert !== null) {
-            const { store } = this.inert;
-
-            for (const key in store)
-                store[key].loadDependencies(dependencies);
-        }
-
-        if (this.params !== null) {
-            const { params } = this;
-
-            if (params.store !== null) dependencies.push(params.store);
-            if (params.inert !== null) params.inert.loadDependencies(dependencies);
-        }
-
-        if (this.wildcardStore !== null) dependencies.push(this.wildcardStore);
-    }
-
-    /**
      * Match a route
      * @internal
      */
@@ -583,14 +559,10 @@ function commonPrefixEnd(part: string, otherPart: string) {
     return minLen;
 }
 
-const ignoreKeys = {
-    lastChild: null,
-};
-
 // Convert special values to a format that can be read by JSON.stringify
 function replaceValue(key: string, value: any) {
     // Ignore null values
-    if (value === null || key in ignoreKeys) return;
+    if (value === null || key === 'lastChild') return;
 
     if (typeof value === 'function')
         return value.toString();

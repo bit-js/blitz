@@ -1,4 +1,4 @@
-import { Edge } from '../internal';
+import { Radix } from '../internal';
 import { Context } from '../types';
 
 declare namespace Router {
@@ -104,7 +104,7 @@ class Router<T> {
     scan(cwd: string = '.'): (req: Request) => RequestContext<T> {
         const { on, style, scanFiles } = this;
 
-        const router = new Edge<T>();
+        const router = new Radix<T>();
         const files = scanFiles(cwd);
 
         // Optimize for arrays

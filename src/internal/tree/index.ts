@@ -92,58 +92,11 @@ export class Tree {
     }
 
     /**
-     * Get dependencies for AOT compilation
-     * @internal
-     */
-    getDependencies(fallback: any) {
-        const { root } = this;
-        const dependencies: any[] = [];
-
-        if (this.staticMap !== null) {
-            dependencies.push(this.staticMap);
-            if (root === null) dependencies.push(fallback);
-        }
-
-        if (root !== null) {
-            root.loadDependencies(dependencies);
-            if (root.wildcardStore === null) dependencies.push(fallback);
-        }
-
-        return dependencies;
-    }
-
-    /**
-     * Get the build context
-     * @internal
-     */
-    inspect(options: Options, fallback: any): BuildContext {
-        const { staticMap, root } = this;
-
-        // Global build context
-        const builder = ['const {path}=c;'];
-        const ctx: BuildContext = new BuildContext(options, builder);
-
-        // Create static routes check
-        if (staticMap !== null)
-            builder.push(root === null
-                ? `return ${ctx.inlineToken(`(${ctx.insert(staticMap)}[path]??${ctx.insert(fallback)})`)};`
-                : `const m=${ctx.insert(staticMap)}[path];if(m!==undefined)return ${ctx.inlineToken('m')};`);
-
-        if (root !== null) {
-            // Create dynamic routes check
-            root.compile(ctx, '1', false, false);
-
-            // Only need the fallback if root wildcard does not exist
-            if (root.wildcardStore === null) builder.push('return ' + ctx.inlineValue(fallback));
-        }
-
-        return ctx;
-    }
-
-    /**
      * Build a function
      */
     compile(options: Options, fallback: any): Matcher {
+        const { root } = this;
+
         // Do only static match if no dynamic routes exists
         if (this.root === null) {
             const { staticMap } = this;
@@ -153,7 +106,27 @@ export class Tree {
                 : staticMap === null ? () => fallback : (ctx) => staticMap[ctx.path] ?? fallback;
         }
 
-        return this.inspect(options, fallback).build();
+        const { staticMap } = this;
+
+        // Global build context
+        const builder = ['const {path}=c;'];
+        const ctx: BuildContext = new BuildContext(options, builder);
+
+        // Create static routes check
+        if (staticMap !== null)
+            builder.push(root === null
+                ? `return ${ctx.inlineToken(`(${ctx.insert(staticMap)}[path]??${ctx.insert(fallback)})`)};`
+                : `const m=${ctx.insert(staticMap)}[path];if(typeof m!=='undefined')return ${ctx.inlineToken('m')};`);
+
+        if (root !== null) {
+            // Create dynamic routes check
+            root.compile(ctx, '1', false, false);
+
+            // Only need the fallback if root wildcard does not exist
+            if (root.wildcardStore === null) builder.push('return ' + ctx.inlineValue(fallback));
+        }
+
+        return ctx.build();
     }
 
     /**

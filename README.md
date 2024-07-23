@@ -38,39 +38,6 @@ The request context contains:
 - `params`: Request URL parameters.
 - `req`: The raw request object.
 
-## Ahead-of-time compilation
-
-By default `Blitz` uses just-in-time compilation, which does not work in some environments by default.
-
-To bypass this, `Blitz` has a method for compiling into a string to write into a file.
-
-In the source file, export your router:
-
-```ts
-export default router;
-```
-
-In another build file:
-
-```ts
-import router from "./main";
-
-// Use specific runtime write function
-Bun.write(
-  "output.js",
-  router.inline({
-    routerImportSource: "./main",
-    contextImportSource: "@bit-js/blitz",
-  }),
-);
-```
-
-Then access the fetch function created:
-
-```ts
-import fetch from "./output.js";
-```
-
 ## Other routers
 
 Other utility routers.
